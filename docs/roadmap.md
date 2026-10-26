@@ -7,6 +7,11 @@ Claude Code, Codex, OpenCode and any future harness; it is not another agent.
 This document is the delivery plan and the dependency map. It is the source of
 truth for story ids, stack order and merge order.
 
+**Status (26 Oct 2026):** Phase 0 and Phase 1 are implemented as PRs #2–#11,
+stacked bottom-up. `docs/roadmap` (#1) is independent. CI is green on the code
+stack. The next story is ADP-1/ADP-2, the Claude Code adapter and the
+kill/resume proof.
+
 ## Delivery rules
 
 - `main` receives only the empty initial commit directly. Everything else lands
