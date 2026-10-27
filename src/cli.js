@@ -11,7 +11,7 @@ Usage:
   brayer serve --ws --port 38294
   brayer status
 
-HTTP, WebSocket and status land in later stories of the roadmap.`;
+HTTP, WebSocket and status land in later stories.`;
 
 export async function main(argv = process.argv.slice(2), { env = process.env } = {}) {
   const [command, ...rest] = argv;
