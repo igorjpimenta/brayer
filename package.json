@@ -1,0 +1,41 @@
+{
+  "name": "@igorjpimenta/brayer",
+  "version": "0.1.0",
+  "description": "Vendor-neutral command layer for agent work",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igorjpimenta/brayer.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    ".migrations/",
+    "README.md"
+  ],
+  "bin": {
+    "brayer": "bin/brayer.js"
+  },
+  "scripts": {
+    "start": "node bin/brayer.js",
+    "test": "node --test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.4",
+    "zod": "^3.25 || ^4.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11"
+  }
+}
