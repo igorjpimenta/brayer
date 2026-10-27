@@ -25,7 +25,6 @@ function rowOrder(r) {
     modelPolicy: jsonIn(r.model_policy),
     approvalMode: r.approval_mode,
     parentId: r.parent_id,
-    winchTaskId: r.winch_task_id,
     assignee: r.assignee,
     claimExpiresAt: r.claim_expires_at,
     leaseSeconds: r.lease_seconds,
@@ -155,7 +154,6 @@ export function createStore({ dbPath, logger, config } = {}) {
       modelPolicy = null,
       approvalMode = "human",
       parentId = null,
-      winchTaskId = null,
       actor = "system",
     } = {}) {
       if (!title || !title.trim()) throw new Error("title is required");
@@ -171,13 +169,13 @@ export function createStore({ dbPath, logger, config } = {}) {
         db.prepare(`
           INSERT INTO work_orders(
             id, title, goal, constraints, acceptance, status, priority, workspace, repo, branch,
-            budget_tokens, budget_usd, model_policy, approval_mode, parent_id, winch_task_id,
+            budget_tokens, budget_usd, model_policy, approval_mode, parent_id,
             created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           orderId, title.trim(), goal.trim(), constraints, acceptance.trim(), status, priority,
           workspace, repo, branch, budgetTokens, budgetUsd, jsonOut(modelPolicy), approvalMode,
-          parentId, winchTaskId, t, t
+          parentId, t, t
         );
         insertEvent({ workOrderId: orderId, toStatus: status, kind: "order.created", actor, note: "order created", at: t });
         db.exec("COMMIT");

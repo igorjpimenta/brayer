@@ -34,7 +34,6 @@ export function createToolHandlers(store) {
         modelPolicy: z.optional(z.unknown()),
         approvalMode: z.optional(z.enum(["auto", "evidence", "human"])),
         parentId: z.optional(z.string()),
-        winchTaskId: z.optional(z.string()),
       },
     },
     {
@@ -218,7 +217,6 @@ export function createToolHandlers(store) {
           modelPolicy: args.modelPolicy ?? null,
           approvalMode: args.approvalMode ?? "human",
           parentId: args.parentId ?? null,
-          winchTaskId: args.winchTaskId ?? null,
           actor: identityKey(identity),
         });
         return { order };

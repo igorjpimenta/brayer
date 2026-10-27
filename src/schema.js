@@ -43,7 +43,6 @@ export const workOrders = sqliteTable("work_orders", {
   modelPolicy: text("model_policy"),
   approvalMode: text("approval_mode").notNull().default("human"),
   parentId: text("parent_id"),
-  winchTaskId: text("winch_task_id"),
   assignee: text("assignee"),
   claimExpiresAt: integer("claim_expires_at"),
   leaseSeconds: integer("lease_seconds"),
@@ -57,7 +56,6 @@ export const workOrders = sqliteTable("work_orders", {
   check("work_orders_approval_mode", sql`${table.approvalMode} IN (${inList(APPROVAL_MODES)})`),
   index("idx_work_orders_status_priority").on(table.status, table.priority),
   index("idx_work_orders_assignee").on(table.assignee),
-  index("idx_work_orders_winch_task").on(table.winchTaskId),
 ]);
 
 export const attempts = sqliteTable("attempts", {
