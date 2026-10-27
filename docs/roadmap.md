@@ -1,6 +1,6 @@
-# Baton roadmap
+# Brayer roadmap
 
-Baton is a vendor-neutral command layer for agent work: work orders in, durable
+Brayer is a vendor-neutral command layer for agent work: work orders in, durable
 handoffs out, evidence-based approval, cost per successful task. It sits above
 Claude Code, Codex, OpenCode and any future harness; it is not another agent.
 
@@ -29,7 +29,7 @@ kill/resume proof.
 
 | Phase | Theme | Exit proof |
 | --- | --- | --- |
-| 0 — Foundation | A package that starts, a store that migrates, identity that refuses defaults, an MCP server that answers | `baton serve --mcp stdio` starts and a smoke tool call succeeds |
+| 0 — Foundation | A package that starts, a store that migrates, identity that refuses defaults, an MCP server that answers | `brayer serve --mcp stdio` starts and a smoke tool call succeeds |
 | 1 — Contract | Orders, claims, attempts, checkpoints, evidence, verdicts, events | One order moves create → claim → checkpoint → finish → verdict |
 | 2 — Harness | Adapter contract and the first three harness adapters | A Claude Code session killed mid-task resumes from checkpoint with no re-brief |
 | 3 — Bridge & ops | Winch bridge, HTTP auth, packaging, docs | Winch `task.assigned` creates an order; approved verdict closes the task |
@@ -124,7 +124,7 @@ flowchart LR
 | CTR-3 | Checkpoint write/get; structured handoff, tree hash | 1 | CTR-2 | `feat/attempts` | Checkpoint survives process restart |
 | CTR-4 | Evidence attach; content-addressed blobs | 1 | CTR-2 | `feat/attempts` | Missing blob is refused; hash verifies |
 | CTR-5 | Verdict issue/resume; gate vs verdict | 1 | CTR-3, CTR-4 | `feat/checkpoints` | High-risk blocks; low-risk auto-approves |
-| CTR-6 | CLI status/inbox and WS event stream | 1 | CTR-1, CTR-5 | `feat/verdict-resume` | Events replay on reconnect; `baton status` reads the ledger |
+| CTR-6 | CLI status/inbox and WS event stream | 1 | CTR-1, CTR-5 | `feat/verdict-resume` | Events replay on reconnect; `brayer status` reads the ledger |
 | ADP-1 | Adapter contract and generic MCP adapter | 2 | CTR-3 | `feat/checkpoints` | Contract tests pass against a fixture |
 | ADP-2 | Claude Code adapter: capture, checkpoint, resume | 2 | ADP-1 | `feat/adapter-contract` | Kill/resume proof with no re-brief |
 | ADP-3 | Codex adapter | 2 | ADP-1 | `feat/adapter-contract` | Resume a Codex session from a checkpoint |
