@@ -7,9 +7,10 @@ of by transcript.
 
 ## Status
 
-The MCP server, SQLite store, claim lease and attempts are
-implemented. Checkpoints, evidence, verdicts, resume, the event stream, harness
-adapters and packaging are next.
+Phase 0 (foundation) and most of Phase 1 (contract) are implemented. The MCP
+server, SQLite store, claim lease, attempts and checkpoints are in place.
+Evidence, verdicts, resume, the event stream, harness adapters and packaging are
+next.
 
 ## What works
 
@@ -24,11 +25,12 @@ The MCP tools are:
 | --- | --- |
 | Orders | `brayer_order_create`, `brayer_order_get`, `brayer_order_next`, `brayer_order_claim`, `brayer_order_heartbeat` |
 | Attempts | `brayer_attempt_start`, `brayer_attempt_finish`, `brayer_attempt_get` |
+| Handoff | `brayer_checkpoint_write`, `brayer_checkpoint_get` |
 
 The lifecycle is:
 
 ```text
-order created -> claimed -> attempt running -> attempt finished
+order created -> claimed -> attempt running -> checkpoint -> attempt finished
 ```
 
 ## Storage
