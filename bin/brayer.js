@@ -10,7 +10,7 @@ Usage:
   brayer serve --ws --port 38294
   brayer status
 
-The MCP and status commands land in later stories of the roadmap.`;
+The MCP and status commands land in later stories.`;
 
 const [command, ...rest] = process.argv.slice(2);
 
