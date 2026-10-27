@@ -35,7 +35,11 @@ The MCP tools are:
 
 ## Flows
 
-Order lifecycle:
+### Order lifecycle
+
+An order moves from ready through a claim and a running attempt to review. The
+verdict decides where it lands, and resume returns rejected or blocked work to
+ready.
 
 ```mermaid
 flowchart LR
@@ -52,10 +56,13 @@ flowchart LR
   H -->|resume| B
 ```
 
-Claim and lease:
+### Claim and lease
+
+An agent claims a ready order, then keeps the lease alive with heartbeats. An
+expired lease returns to the queue or blocks at the attempt cap.
 
 ```mermaid
-flowchart TD
+flowchart LR
   Q[Ready order] -->|claimNext / claimById| L{Lease won?}
   L -->|no| Q
   L -->|yes| H[Claimed with lease]
@@ -65,7 +72,10 @@ flowchart TD
   E -->|yes| X[Blocked]
 ```
 
-Checkpoint and evidence:
+### Checkpoint and evidence
+
+The store validates the attempt and the handoff or proof before it records the
+row and emits the event.
 
 ```mermaid
 flowchart LR
@@ -77,7 +87,10 @@ flowchart LR
   D --> E[Emit event]
 ```
 
-Verdict and resume:
+### Verdict and resume
+
+A verdict closes review or blocked work. Reject and escalate remain resumable;
+rollback returns the order to ready directly.
 
 ```mermaid
 flowchart LR
