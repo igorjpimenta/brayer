@@ -31,7 +31,7 @@ const identity = { brayer_agent: "worker", brayer_session: "s1" };
 test("lists the order tools", () => withClient(async ({ client }) => {
   const { tools } = await client.listTools();
   const names = tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ["brayer_order_claim", "brayer_order_create", "brayer_order_get", "brayer_order_heartbeat", "brayer_order_next"]);
+  assert.deepEqual(names, ["brayer_attempt_finish", "brayer_attempt_get", "brayer_attempt_start", "brayer_order_claim", "brayer_order_create", "brayer_order_get", "brayer_order_heartbeat", "brayer_order_next"]);
 }));
 
 test("creates and reads an order over MCP", () => withClient(async ({ client }) => {
