@@ -5,9 +5,6 @@ the attempts made against it, the handoff checkpoint, the evidence returned, and
 the verdict — so a fleet of coding agents can be supervised by exception instead
 of by transcript.
 
-The product thesis, phases and dependency map are in
-[docs/roadmap.md](docs/roadmap.md).
-
 ## Status
 
 Phase 0 (foundation) and Phase 1 (contract) are implemented. The MCP server,
