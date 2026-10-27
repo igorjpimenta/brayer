@@ -7,9 +7,8 @@ of by transcript.
 
 ## Status
 
-The MCP server, SQLite store, claim lease, attempts and checkpoints
-are implemented. Evidence, verdicts, resume, the event stream, harness adapters
-and packaging are next.
+Brayer is in active development. The MCP server, SQLite store, claim lease,
+attempts and checkpoints are implemented.
 
 ## What works
 
