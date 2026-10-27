@@ -8,7 +8,7 @@ of by transcript.
 ## Status
 
 Brayer is in active development. The MCP server, SQLite store, claim lease,
-attempts, checkpoints and content-addressed evidence are implemented.
+attempts, checkpoints, evidence, verdicts and resume are implemented.
 
 ## What works
 
@@ -21,17 +21,19 @@ The MCP tools are:
 
 | Area | Tools |
 | --- | --- |
-| Orders | `brayer_order_create`, `brayer_order_get`, `brayer_order_next`, `brayer_order_claim`, `brayer_order_heartbeat` |
+| Orders | `brayer_order_create`, `brayer_order_get`, `brayer_order_next`, `brayer_order_claim`, `brayer_order_heartbeat`, `brayer_order_resume` |
 | Attempts | `brayer_attempt_start`, `brayer_attempt_finish`, `brayer_attempt_get` |
 | Handoff | `brayer_checkpoint_write`, `brayer_checkpoint_get` |
 | Evidence | `brayer_evidence_attach`, `brayer_evidence_list` |
+| Verdict | `brayer_verdict_issue`, `brayer_verdict_list` |
 
 ## Flows
 
 ### Order lifecycle
 
-An order moves from ready to review through a claim and a running attempt. A
-failed attempt returns it to ready.
+An order moves from ready through a claim and a running attempt to review. The
+verdict decides where it lands, and resume returns rejected or blocked work to
+ready.
 
 ```mermaid
 flowchart LR
@@ -41,6 +43,11 @@ flowchart LR
   D -->|checkpoint / evidence| D
   D -->|attempt finished| E[Review]
   D -->|attempt failed| B
+  E -->|approve| F[Approved]
+  E -->|reject| G[Rejected]
+  E -->|escalate| H[Blocked]
+  G -->|resume| B
+  H -->|resume| B
 ```
 
 ### Claim and lease
@@ -72,6 +79,22 @@ flowchart LR
   C -->|no| R
   C -->|yes| D[Insert checkpoint or evidence]
   D --> E[Emit event]
+```
+
+### Verdict and resume
+
+A verdict closes review or blocked work. Reject and escalate remain resumable;
+rollback returns the order to ready directly.
+
+```mermaid
+flowchart LR
+  A[Review or blocked] --> B{Decision}
+  B -->|approve| C[Approved]
+  B -->|reject| D[Rejected]
+  B -->|escalate| E[Blocked]
+  B -->|rollback| F[Ready]
+  D -->|resume| F
+  E -->|resume| F
 ```
 
 ## Storage

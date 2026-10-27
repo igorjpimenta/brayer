@@ -1,6 +1,6 @@
 import { openDatabase } from "./db.js";
 import { resolveConfig } from "./config.js";
-import { newOrderId, newAttemptId, newCheckpointId, newEvidenceId } from "./ids.js";
+import { newOrderId, newAttemptId, newCheckpointId, newEvidenceId, newVerdictId } from "./ids.js";
 import { APPROVAL_MODES, EVIDENCE_KINDS, ORDER_STATUSES } from "./schema.js";
 
 function now() { return Date.now(); }
@@ -562,6 +562,93 @@ export function createStore({ dbPath, logger, config } = {}) {
   };
 
 
+  const verdictApi = {
+    list({ workOrderId } = {}) {
+      const sql = workOrderId
+        ? "SELECT * FROM verdicts WHERE work_order_id=? ORDER BY created_at ASC, rowid ASC"
+        : "SELECT * FROM verdicts ORDER BY created_at ASC, rowid ASC LIMIT 200";
+      return db.prepare(sql).all(...(workOrderId ? [workOrderId] : [])).map(rowVerdict);
+    },
+
+    issue({
+      workOrderId,
+      attemptId = null,
+      decision,
+      reason = null,
+      actor = "system",
+      policy = null,
+      evidenceIds = null,
+    } = {}) {
+      if (!workOrderId) throw new Error("workOrderId is required");
+      if (!["approve", "reject", "escalate", "rollback"].includes(decision)) throw new Error(`invalid verdict decision: ${decision}`);
+      const t = now();
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        const order = orderApi.get(workOrderId);
+        if (!order) throw new Error(`order not found: ${workOrderId}`);
+        if (order.status !== "review" && order.status !== "blocked") {
+          throw new Error(`verdict requires review or blocked, got ${order.status}`);
+        }
+        if (decision === "approve" && evidenceApi.list({ workOrderId }).length === 0) {
+          throw new Error("approve requires at least one evidence row");
+        }
+
+        const nextStatus = decision === "approve" ? "approved"
+          : decision === "reject" ? "rejected"
+          : decision === "escalate" ? "blocked"
+          : "ready";
+        const id = newVerdictId();
+        db.prepare(`
+          INSERT INTO verdicts(id, work_order_id, attempt_id, decision, reason, actor, policy, evidence_ids, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, workOrderId, attemptId, decision, reason, actor, policy, jsonOut(evidenceIds), t);
+        db.prepare("UPDATE work_orders SET status=?, updated_at=? WHERE id=?").run(nextStatus, t, workOrderId);
+        insertEvent({
+          workOrderId, attemptId, fromStatus: order.status, toStatus: nextStatus, kind: "verdict.issued",
+          actor, note: reason ?? decision, at: t,
+        });
+        db.exec("COMMIT");
+        return { verdict: verdictApi.list({ workOrderId }).at(-1), order: orderApi.get(workOrderId) };
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+    },
+  };
+
+  const resumeApi = {
+    resume({ workOrderId, actor = "operator", reason = "resumed" } = {}) {
+      if (!workOrderId) throw new Error("workOrderId is required");
+      const t = now();
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        const order = orderApi.get(workOrderId);
+        if (!order) throw new Error(`order not found: ${workOrderId}`);
+        if (order.status !== "rejected" && order.status !== "blocked") {
+          throw new Error(`resume requires rejected or blocked, got ${order.status}`);
+        }
+        db.prepare(`
+          UPDATE work_orders
+             SET status='ready', assignee=NULL, claim_expires_at=NULL, lease_seconds=NULL,
+                 last_heartbeat=NULL, updated_at=?
+           WHERE id=?
+        `).run(t, workOrderId);
+        insertEvent({
+          workOrderId, fromStatus: order.status, toStatus: "ready", kind: "order.resumed",
+          actor, note: reason, at: t,
+        });
+        db.exec("COMMIT");
+        return {
+          order: orderApi.get(workOrderId),
+          checkpoint: checkpointApi.latest({ workOrderId }),
+        };
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+    },
+  };
+
   const eventApi = {
     list({ workOrderId, afterId = 0, limit = 200 } = {}) {
       const sql = workOrderId
@@ -580,6 +667,8 @@ export function createStore({ dbPath, logger, config } = {}) {
     attempt: attemptApi,
     checkpoint: checkpointApi,
     evidence: evidenceApi,
+    verdict: verdictApi,
+    resume: resumeApi,
     event: eventApi,
     insertEvent,
     close() { db.close(); },

@@ -31,7 +31,7 @@ const identity = { brayer_agent: "worker", brayer_session: "s1" };
 test("lists the order tools", () => withClient(async ({ client }) => {
   const { tools } = await client.listTools();
   const names = tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ["brayer_attempt_finish", "brayer_attempt_get", "brayer_attempt_start", "brayer_checkpoint_get", "brayer_checkpoint_write", "brayer_evidence_attach", "brayer_evidence_list", "brayer_order_claim", "brayer_order_create", "brayer_order_get", "brayer_order_heartbeat", "brayer_order_next"]);
+  assert.deepEqual(names, ["brayer_attempt_finish", "brayer_attempt_get", "brayer_attempt_start", "brayer_checkpoint_get", "brayer_checkpoint_write", "brayer_evidence_attach", "brayer_evidence_list", "brayer_order_claim", "brayer_order_create", "brayer_order_get", "brayer_order_heartbeat", "brayer_order_next", "brayer_order_resume", "brayer_verdict_issue", "brayer_verdict_list"]);
 }));
 
 test("creates and reads an order over MCP", () => withClient(async ({ client }) => {
@@ -99,6 +99,31 @@ test("writes and reads a checkpoint over MCP", () => withClient(async ({ client 
     arguments: { ...identity, orderId: order.id },
   });
   assert.equal(JSON.parse(latest.content[0].text).checkpoint.id, checkpoint.id);
+}));
+
+test("issues an approve verdict over MCP", () => withClient(async ({ client, dir }) => {
+  const created = await client.callTool({
+    name: "brayer_order_create",
+    arguments: { ...identity, title: "verdict task", goal: "do it", acceptance: "done", status: "ready" },
+  });
+  const order = JSON.parse(created.content[0].text).order;
+  await client.callTool({ name: "brayer_order_claim", arguments: { ...identity, orderId: order.id } });
+  const started = await client.callTool({ name: "brayer_attempt_start", arguments: { ...identity, orderId: order.id } });
+  const attempt = JSON.parse(started.content[0].text).attempt;
+
+  const file = path.join(dir, "diff.patch");
+  (await import("node:fs")).writeFileSync(file, "diff --git a/x b/x\n");
+  await client.callTool({
+    name: "brayer_evidence_attach",
+    arguments: { ...identity, orderId: order.id, attemptId: attempt.id, kind: "diff", path: file },
+  });
+  await client.callTool({ name: "brayer_attempt_finish", arguments: { ...identity, attemptId: attempt.id, status: "finished" } });
+
+  const verdict = await client.callTool({
+    name: "brayer_verdict_issue",
+    arguments: { ...identity, orderId: order.id, decision: "approve", reason: "ok" },
+  });
+  assert.equal(JSON.parse(verdict.content[0].text).order.status, "approved");
 }));
 
 test("refuses an unstamped call", () => withClient(async ({ client }) => {
