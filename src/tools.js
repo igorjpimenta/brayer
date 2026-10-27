@@ -158,6 +158,38 @@ export function createToolHandlers(store) {
       },
     },
     {
+      name: "brayer_verdict_issue",
+      description:
+        "Record a verdict on an order in review or blocked. Approve requires at least one evidence row; escalate blocks the order; rollback returns it to the queue.",
+      shape: {
+        ...identityShape,
+        orderId: z.string(),
+        attemptId: z.optional(z.string()),
+        decision: z.enum(["approve", "reject", "escalate", "rollback"]),
+        reason: z.optional(z.string()),
+        policy: z.optional(z.string()),
+        evidenceIds: z.optional(z.array(z.string())),
+      },
+    },
+    {
+      name: "brayer_verdict_list",
+      description: "List verdicts for an order. Read-only.",
+      shape: {
+        ...identityShape,
+        orderId: z.string(),
+      },
+    },
+    {
+      name: "brayer_order_resume",
+      description:
+        "Resume a rejected or blocked order. Returns the order and its latest checkpoint so the next attempt can continue without a re-brief.",
+      shape: {
+        ...identityShape,
+        orderId: z.string(),
+        reason: z.optional(z.string()),
+      },
+    },
+    {
       name: "brayer_order_get",
       description:
         "Read a work order and its event trail. Read-only: it never claims, starts an attempt or changes state.",
@@ -297,6 +329,27 @@ export function createToolHandlers(store) {
         if (!args.orderId && !args.attemptId) throw new Error("orderId or attemptId is required");
         return { evidence: store.evidence.list({ workOrderId: args.orderId, attemptId: args.attemptId }) };
       }
+      case "brayer_verdict_issue": {
+        return store.verdict.issue({
+          workOrderId: args.orderId,
+          attemptId: args.attemptId ?? null,
+          decision: args.decision,
+          reason: args.reason ?? null,
+          policy: args.policy ?? null,
+          evidenceIds: args.evidenceIds ?? null,
+          actor: identityKey(identity),
+        });
+      }
+      case "brayer_verdict_list": {
+        return { verdicts: store.verdict.list({ workOrderId: args.orderId }) };
+      }
+      case "brayer_order_resume": {
+        return store.resume.resume({
+          workOrderId: args.orderId,
+          reason: args.reason ?? "resumed",
+          actor: identityKey(identity),
+        });
+      }
       case "brayer_order_get": {
         const order = store.order.get(args.orderId);
         if (!order) throw new Error(`order not found: ${args.orderId}`);
@@ -305,6 +358,7 @@ export function createToolHandlers(store) {
           events: store.event.list({ workOrderId: order.id }),
           checkpoint: store.checkpoint.latest({ workOrderId: order.id }),
           evidence: store.evidence.list({ workOrderId: order.id }),
+          verdicts: store.verdict.list({ workOrderId: order.id }),
         };
       }
       default:
