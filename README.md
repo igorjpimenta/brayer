@@ -7,10 +7,9 @@ of by transcript.
 
 ## Status
 
-Phase 0 (foundation) and the first half of Phase 1 (contract) are implemented.
-The MCP server, SQLite store, claim lease and attempts are in place. Checkpoints,
-evidence, verdicts, resume, the event stream, harness adapters and packaging are
-next.
+The MCP server, SQLite store, claim lease and attempts are
+implemented. Checkpoints, evidence, verdicts, resume, the event stream, harness
+adapters and packaging are next.
 
 ## What works
 
