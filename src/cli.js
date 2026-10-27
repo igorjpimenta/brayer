@@ -11,7 +11,7 @@ Usage:
   brayer serve --ws --port 38294
   brayer status [--json]
 
-HTTP and the full inbox land in later stories of the roadmap.`;
+HTTP and the full inbox land in later stories.`;
 
 function flagValue(args, name) {
   const i = args.indexOf(name);
