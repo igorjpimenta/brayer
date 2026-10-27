@@ -8,7 +8,7 @@ of by transcript.
 ## Status
 
 Early scaffold. The CLI currently exposes `--version` and `--help`; the MCP
-contract, store and adapters land in the stories listed in the roadmap.
+contract, store and adapters land in the implementation stories.
 
 ## Requirements
 
