@@ -5,18 +5,27 @@ the attempts made against it, the handoff checkpoint, the evidence returned, and
 the verdict — so a fleet of coding agents can be supervised by exception instead
 of by transcript.
 
+The product thesis, phases and dependency map are in
+[docs/roadmap.md](docs/roadmap.md).
+
 ## Status
 
-Phase 0 (foundation) and most of Phase 1 (contract) are implemented. The MCP
-server, SQLite store, claim lease, attempts and checkpoints are in place.
-Evidence, verdicts, resume, the event stream, harness adapters and packaging are
-next.
+Phase 0 (foundation) and Phase 1 (contract) are implemented. The MCP server,
+SQLite store, claim lease, attempts, checkpoints, evidence, verdicts, resume and
+event stream are in place. Harness adapters and packaging are next.
 
 ## What works
 
 ```sh
 # MCP over stdio for one harness
 BRAYER_HARNESS=claude brayer serve --mcp stdio
+
+# Event stream for dashboards and inboxes
+brayer serve --ws --port 38294
+
+# Read the queue
+brayer status
+brayer status --json
 ```
 
 The MCP tools are:
@@ -51,6 +60,8 @@ malformed values; unknown explicit keys refuse as typos.
 | Blobs | `BRAYER_BLOBS` | `~/.brayer/blobs` |
 | Lease | `BRAYER_LEASE_SECONDS` | `1800` |
 | Attempt cap | `BRAYER_MAX_ATTEMPTS` | `3` |
+| HTTP port | `BRAYER_HTTP_PORT` | `38293` |
+| WS port | `BRAYER_WS_PORT` | `38294` |
 
 ## Identity
 
@@ -58,11 +69,6 @@ Every call is keyed `harness:agent:session`. The harness is declared at
 construction (`BRAYER_HARNESS`); the agent and session are stamped per call via
 `_meta.brayer` with `brayer_agent` / `brayer_session` as the fallback. Missing or
 mismatched identity refuses the call.
-
-## Requirements
-
-- Node 22+
-- A writable SQLite path
 
 ## Development
 
