@@ -1,9 +1,38 @@
-# brayer
+# Brayer
+
+**Ink the work, not the transcript.**
 
 Brayer is a vendor-neutral command layer for agent work. It records a work order,
 the attempts made against it, the handoff checkpoint, the evidence returned, and
 the verdict — so a fleet of coding agents can be supervised by exception instead
 of by transcript.
+
+The product positioning is in [docs/positioning.md](docs/positioning.md).
+
+## Why Brayer
+
+A brayer is the printer's small hand roller that applies ink evenly to type. It
+does not rewrite the page, and it does not keep the manuscript. It puts the ink
+exactly where the work needs it.
+
+Brayer does the same for agents. It applies context to the work — the order, the
+checkpoint, the proof, the decision — instead of piling another transcript into
+the context window.
+
+The product is a command layer, not another agent:
+
+- **Work order in** — goal, acceptance, workspace, budget, approval mode.
+- **Handoff out** — a structured checkpoint with a tree hash, not a transcript.
+- **Evidence attached** — diff, tests, screenshots, artifacts, all content-addressed.
+- **Verdict recorded** — approve, reject, escalate or rollback, with an audit event.
+- **Resume exact** — a leased attempt can die and continue in any harness without a re-brief.
+
+## Who it is for
+
+Technical operators who run several coding agents across repos and harnesses and
+need to supervise by exception, not by reading every trace. It is local-first and
+vendor-neutral: Claude Code, Codex, OpenCode and future harnesses are adapters,
+not the product.
 
 ## Status
 
