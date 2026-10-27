@@ -26,15 +26,11 @@ The MCP tools are:
 | Orders | `brayer_order_create`, `brayer_order_get`, `brayer_order_next`, `brayer_order_claim`, `brayer_order_heartbeat`, `brayer_order_resume` |
 | Attempts | `brayer_attempt_start`, `brayer_attempt_finish`, `brayer_attempt_get` |
 | Handoff | `brayer_checkpoint_write`, `brayer_checkpoint_get` |
-| Evidence | `brayer_evidence_attach`, `brayer_evidence_list` |
-| Verdict | `brayer_verdict_issue`, `brayer_verdict_list` |
 
 ## Flows
 
 ```text
-order created -> claimed -> attempt running -> checkpoint + evidence
-             -> attempt finished -> review -> verdict -> approved / rejected / blocked
-             -> resume returns the order to ready with its latest checkpoint
+order created -> claimed -> attempt running -> checkpoint -> attempt finished
 ```
 
 ## Storage
