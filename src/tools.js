@@ -27,12 +27,42 @@ export function createToolHandlers(store) {
         repo: z.optional(z.string()),
         branch: z.optional(z.string()),
         priority: z.optional(z.int()),
+        status: z.optional(z.enum(["draft", "ready"])),
         budgetTokens: z.optional(z.int()),
         budgetUsd: z.optional(z.number()),
         modelPolicy: z.optional(z.unknown()),
         approvalMode: z.optional(z.enum(["auto", "evidence", "human"])),
         parentId: z.optional(z.string()),
         winchTaskId: z.optional(z.string()),
+      },
+    },
+    {
+      name: "brayer_order_next",
+      description:
+        "Atomically claim the highest-priority ready order for this agent. A race loser gets an empty result, never a partial claim.",
+      shape: {
+        ...identityShape,
+        leaseSeconds: z.optional(z.int()),
+      },
+    },
+    {
+      name: "brayer_order_claim",
+      description:
+        "Atomically claim one ready order by id. The order must be ready and unassigned, or assigned to this agent.",
+      shape: {
+        ...identityShape,
+        orderId: z.string(),
+        leaseSeconds: z.optional(z.int()),
+      },
+    },
+    {
+      name: "brayer_order_heartbeat",
+      description:
+        "Renew the lease on an order this agent holds. Returns null when the lease is no longer held.",
+      shape: {
+        ...identityShape,
+        orderId: z.string(),
+        leaseSeconds: z.optional(z.int()),
       },
     },
     {
@@ -58,6 +88,7 @@ export function createToolHandlers(store) {
           repo: args.repo ?? null,
           branch: args.branch ?? null,
           priority: args.priority ?? 50,
+          status: args.status ?? "draft",
           budgetTokens: args.budgetTokens ?? null,
           budgetUsd: args.budgetUsd ?? null,
           modelPolicy: args.modelPolicy ?? null,
@@ -65,6 +96,32 @@ export function createToolHandlers(store) {
           parentId: args.parentId ?? null,
           winchTaskId: args.winchTaskId ?? null,
           actor: identityKey(identity),
+        });
+        return { order };
+      }
+      case "brayer_order_next": {
+        const res = store.claim.claimNext({
+          agentId: identityKey(identity),
+          sessionRef: identity.session,
+          leaseSeconds: args.leaseSeconds,
+        });
+        return res;
+      }
+      case "brayer_order_claim": {
+        const res = store.claim.claimById({
+          id: args.orderId,
+          agentId: identityKey(identity),
+          sessionRef: identity.session,
+          leaseSeconds: args.leaseSeconds,
+        });
+        return res;
+      }
+      case "brayer_order_heartbeat": {
+        const order = store.claim.heartbeat({
+          id: args.orderId,
+          agentId: identityKey(identity),
+          sessionRef: identity.session,
+          leaseSeconds: args.leaseSeconds,
         });
         return { order };
       }
