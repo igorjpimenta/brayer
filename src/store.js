@@ -1,7 +1,7 @@
 import { openDatabase } from "./db.js";
 import { resolveConfig } from "./config.js";
-import { newOrderId, newAttemptId, newCheckpointId } from "./ids.js";
-import { APPROVAL_MODES, ORDER_STATUSES } from "./schema.js";
+import { newOrderId, newAttemptId, newCheckpointId, newEvidenceId } from "./ids.js";
+import { APPROVAL_MODES, EVIDENCE_KINDS, ORDER_STATUSES } from "./schema.js";
 
 function now() { return Date.now(); }
 function jsonOut(v) { return v == null ? null : JSON.stringify(v); }
@@ -72,6 +72,39 @@ function rowCheckpoint(r) {
     confidence: r.confidence,
     resumeRecipe: r.resume_recipe,
     treeHash: r.tree_hash,
+    createdAt: r.created_at,
+  };
+}
+
+function rowEvidence(r) {
+  if (!r) return null;
+  return {
+    id: r.id,
+    workOrderId: r.work_order_id,
+    attemptId: r.attempt_id,
+    kind: r.kind,
+    uri: r.uri,
+    sha256: r.sha256,
+    summary: r.summary,
+    command: r.command,
+    exitCode: r.exit_code,
+    status: r.status,
+    verifier: r.verifier,
+    createdAt: r.created_at,
+  };
+}
+
+function rowVerdict(r) {
+  if (!r) return null;
+  return {
+    id: r.id,
+    workOrderId: r.work_order_id,
+    attemptId: r.attempt_id,
+    decision: r.decision,
+    reason: r.reason,
+    actor: r.actor,
+    policy: r.policy,
+    evidenceIds: jsonIn(r.evidence_ids),
     createdAt: r.created_at,
   };
 }
@@ -468,6 +501,67 @@ export function createStore({ dbPath, logger, config } = {}) {
     },
   };
 
+
+  const evidenceApi = {
+    get(id) {
+      return rowEvidence(db.prepare("SELECT * FROM evidence WHERE id=?").get(id));
+    },
+
+    list({ workOrderId, attemptId } = {}) {
+      const where = [];
+      const args = [];
+      if (workOrderId) { where.push("work_order_id=?"); args.push(workOrderId); }
+      if (attemptId) { where.push("attempt_id=?"); args.push(attemptId); }
+      const sql = `SELECT * FROM evidence${where.length ? ` WHERE ${where.join(" AND ")}` : ""} ORDER BY created_at ASC, rowid ASC`;
+      return db.prepare(sql).all(...args).map(rowEvidence);
+    },
+
+    attach({
+      workOrderId,
+      attemptId,
+      kind,
+      uri,
+      sha256,
+      summary = null,
+      command = null,
+      exitCode = null,
+      status = null,
+      verifier = null,
+      actor = "system",
+    } = {}) {
+      if (!workOrderId) throw new Error("workOrderId is required");
+      if (!attemptId) throw new Error("attemptId is required");
+      if (!EVIDENCE_KINDS.includes(kind)) throw new Error(`invalid evidence kind: ${kind}`);
+      if (!uri) throw new Error("uri is required");
+      if (typeof sha256 !== "string" || !/^[a-f0-9]{64}$/.test(sha256)) throw new Error("sha256 must be 64 lowercase hex characters");
+
+      const attempt = attemptApi.get(attemptId);
+      if (!attempt) throw new Error(`attempt not found: ${attemptId}`);
+      if (attempt.workOrderId !== workOrderId) throw new Error("attempt does not belong to the order");
+      if (attempt.status !== "running") throw new Error("evidence requires a running attempt");
+
+      const t = now();
+      const id = newEvidenceId();
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        db.prepare(`
+          INSERT INTO evidence(id, work_order_id, attempt_id, kind, uri, sha256, summary, command, exit_code, status, verifier, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, workOrderId, attemptId, kind, uri, sha256, summary, command, exitCode, status, verifier, t);
+        insertEvent({
+          workOrderId, attemptId, fromStatus: "running", toStatus: "running", kind: "evidence.attached",
+          actor, note: summary ?? kind, sessionRef: attempt.sessionRef, at: t,
+        });
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+      return evidenceApi.get(id);
+    },
+  };
+
+
   const eventApi = {
     list({ workOrderId, afterId = 0, limit = 200 } = {}) {
       const sql = workOrderId
@@ -485,6 +579,7 @@ export function createStore({ dbPath, logger, config } = {}) {
     claim: claimApi,
     attempt: attemptApi,
     checkpoint: checkpointApi,
+    evidence: evidenceApi,
     event: eventApi,
     insertEvent,
     close() { db.close(); },

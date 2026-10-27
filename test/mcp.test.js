@@ -10,14 +10,14 @@ import { createMcpServer } from "../src/mcp.js";
 
 async function withClient(fn) {
   const dir = mkdtempSync(path.join(tmpdir(), "brayer-mcp-"));
-  const store = createStore({ dbPath: path.join(dir, "store.sqlite") });
+  const store = createStore({ dbPath: path.join(dir, "store.sqlite"), config: { blobsPath: path.join(dir, "blobs") } });
   const server = createMcpServer({ store, base: { harness: "test" } });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   const client = new Client({ name: "brayer-test", version: "0.0.0" });
   await client.connect(clientTransport);
   try {
-    return await fn({ client, store });
+    return await fn({ client, store, dir });
   } finally {
     await client.close();
     await server.close();
@@ -31,7 +31,7 @@ const identity = { brayer_agent: "worker", brayer_session: "s1" };
 test("lists the order tools", () => withClient(async ({ client }) => {
   const { tools } = await client.listTools();
   const names = tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ["brayer_attempt_finish", "brayer_attempt_get", "brayer_attempt_start", "brayer_checkpoint_get", "brayer_checkpoint_write", "brayer_order_claim", "brayer_order_create", "brayer_order_get", "brayer_order_heartbeat", "brayer_order_next"]);
+  assert.deepEqual(names, ["brayer_attempt_finish", "brayer_attempt_get", "brayer_attempt_start", "brayer_checkpoint_get", "brayer_checkpoint_write", "brayer_evidence_attach", "brayer_evidence_list", "brayer_order_claim", "brayer_order_create", "brayer_order_get", "brayer_order_heartbeat", "brayer_order_next"]);
 }));
 
 test("creates and reads an order over MCP", () => withClient(async ({ client }) => {
