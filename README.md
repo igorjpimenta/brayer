@@ -8,7 +8,7 @@ of by transcript.
 ## Status
 
 Brayer is in active development. The MCP server, SQLite store, claim lease,
-attempts and checkpoints are implemented.
+attempts, checkpoints and content-addressed evidence are implemented.
 
 ## What works
 
@@ -24,6 +24,7 @@ The MCP tools are:
 | Orders | `brayer_order_create`, `brayer_order_get`, `brayer_order_next`, `brayer_order_claim`, `brayer_order_heartbeat` |
 | Attempts | `brayer_attempt_start`, `brayer_attempt_finish`, `brayer_attempt_get` |
 | Handoff | `brayer_checkpoint_write`, `brayer_checkpoint_get` |
+| Evidence | `brayer_evidence_attach`, `brayer_evidence_list` |
 
 ## Flows
 
@@ -37,7 +38,7 @@ flowchart LR
   A[Order created] -->|status ready| B[Ready]
   B -->|claim| C[Claimed]
   C -->|attempt start| D[Running]
-  D -->|checkpoint| D
+  D -->|checkpoint / evidence| D
   D -->|attempt finished| E[Review]
   D -->|attempt failed| B
 ```
@@ -58,25 +59,25 @@ flowchart LR
   E -->|yes| X[Blocked]
 ```
 
-### Checkpoint write
+### Checkpoint and evidence
 
-The store validates the attempt, state and tree hash before it records the
-handoff and emits the event.
+The store validates the attempt and the handoff or proof before it records the
+row and emits the event.
 
 ```mermaid
 flowchart LR
   A[Running attempt] --> B{Belongs to order?}
   B -->|no| R[Refuse]
-  B -->|yes| C{State object and tree hash?}
+  B -->|yes| C{Valid state / tree hash / sha256?}
   C -->|no| R
-  C -->|yes| D[Insert checkpoint]
-  D --> E[Set attempt.checkpoint_id]
-  E --> F[Emit checkpoint.written]
+  C -->|yes| D[Insert checkpoint or evidence]
+  D --> E[Emit event]
 ```
 
 ## Storage
 
 - SQLite at `BRAYER_DB` or `~/.brayer/store.sqlite`
+- Content-addressed evidence at `BRAYER_BLOBS` or `~/.brayer/blobs/<sha256>`
 - Drizzle migrations in `.migrations/`, applied on open
 - WAL, foreign keys and a 5s busy timeout
 
@@ -88,6 +89,7 @@ malformed values; unknown explicit keys refuse as typos.
 | Knob | Env | Default |
 | --- | --- | --- |
 | Store | `BRAYER_DB` | `~/.brayer/store.sqlite` |
+| Blobs | `BRAYER_BLOBS` | `~/.brayer/blobs` |
 | Lease | `BRAYER_LEASE_SECONDS` | `1800` |
 | Attempt cap | `BRAYER_MAX_ATTEMPTS` | `3` |
 

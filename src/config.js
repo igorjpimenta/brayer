@@ -3,6 +3,7 @@ import path from "node:path";
 
 const DEFAULTS = {
   dbPath: path.join(os.homedir(), ".brayer", "store.sqlite"),
+  blobsPath: path.join(os.homedir(), ".brayer", "blobs"),
   leaseSeconds: 1800,
   maxAttempts: 3,
   httpPort: 38293,
@@ -11,6 +12,7 @@ const DEFAULTS = {
 
 const ENV_KEYS = {
   dbPath: "BRAYER_DB",
+  blobsPath: "BRAYER_BLOBS",
   leaseSeconds: "BRAYER_LEASE_SECONDS",
   maxAttempts: "BRAYER_MAX_ATTEMPTS",
   httpPort: "BRAYER_HTTP_PORT",

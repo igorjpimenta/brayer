@@ -1,5 +1,6 @@
 import * as z from "zod/v4-mini";
 import { identityKey } from "./identity.js";
+import { storeFile } from "./evidence.js";
 
 const identityShape = {
   brayer_agent: z.optional(z.string()),
@@ -129,6 +130,34 @@ export function createToolHandlers(store) {
       },
     },
     {
+      name: "brayer_evidence_attach",
+      description:
+        "Attach typed evidence to a running attempt. Pass a local path and Brayer stores a content-addressed blob; or pass uri + sha256 for an existing blob.",
+      shape: {
+        ...identityShape,
+        orderId: z.string(),
+        attemptId: z.string(),
+        kind: z.enum(["diff", "test", "lint", "screenshot", "artifact", "log"]),
+        path: z.optional(z.string()),
+        uri: z.optional(z.string()),
+        sha256: z.optional(z.string()),
+        summary: z.optional(z.string()),
+        command: z.optional(z.string()),
+        exitCode: z.optional(z.int()),
+        status: z.optional(z.string()),
+        verifier: z.optional(z.string()),
+      },
+    },
+    {
+      name: "brayer_evidence_list",
+      description: "List evidence for an order or an attempt. Read-only.",
+      shape: {
+        ...identityShape,
+        orderId: z.optional(z.string()),
+        attemptId: z.optional(z.string()),
+      },
+    },
+    {
       name: "brayer_order_get",
       description:
         "Read a work order and its event trail. Read-only: it never claims, starts an attempt or changes state.",
@@ -240,10 +269,43 @@ export function createToolHandlers(store) {
         if (!args.orderId) throw new Error("checkpointId or orderId is required");
         return { checkpoint: store.checkpoint.latest({ workOrderId: args.orderId }) };
       }
+      case "brayer_evidence_attach": {
+        let uri = args.uri;
+        let sha256 = args.sha256;
+        if (args.path) {
+          const stored = storeFile({ root: store.config.blobsPath, filePath: args.path });
+          uri = stored.uri;
+          sha256 = stored.sha256;
+        }
+        if (!uri || !sha256) throw new Error("path or uri + sha256 is required");
+        const evidence = store.evidence.attach({
+          workOrderId: args.orderId,
+          attemptId: args.attemptId,
+          kind: args.kind,
+          uri,
+          sha256,
+          summary: args.summary ?? null,
+          command: args.command ?? null,
+          exitCode: args.exitCode ?? null,
+          status: args.status ?? null,
+          verifier: args.verifier ?? null,
+          actor: identityKey(identity),
+        });
+        return { evidence };
+      }
+      case "brayer_evidence_list": {
+        if (!args.orderId && !args.attemptId) throw new Error("orderId or attemptId is required");
+        return { evidence: store.evidence.list({ workOrderId: args.orderId, attemptId: args.attemptId }) };
+      }
       case "brayer_order_get": {
         const order = store.order.get(args.orderId);
         if (!order) throw new Error(`order not found: ${args.orderId}`);
-        return { order, events: store.event.list({ workOrderId: order.id }) };
+        return {
+          order,
+          events: store.event.list({ workOrderId: order.id }),
+          checkpoint: store.checkpoint.latest({ workOrderId: order.id }),
+          evidence: store.evidence.list({ workOrderId: order.id }),
+        };
       }
       default:
         throw new Error(`unknown tool: ${name}`);
