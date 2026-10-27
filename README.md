@@ -35,8 +35,59 @@ The MCP tools are:
 
 ## Flows
 
-```text
-order created -> claimed -> attempt running -> checkpoint -> attempt finished
+Order lifecycle:
+
+```mermaid
+flowchart LR
+  A[Order created] -->|status ready| B[Ready]
+  B -->|claim| C[Claimed]
+  C -->|attempt start| D[Running]
+  D -->|checkpoint / evidence| D
+  D -->|attempt finished| E[Review]
+  D -->|attempt failed| B
+  E -->|approve| F[Approved]
+  E -->|reject| G[Rejected]
+  E -->|escalate| H[Blocked]
+  G -->|resume| B
+  H -->|resume| B
+```
+
+Claim and lease:
+
+```mermaid
+flowchart TD
+  Q[Ready order] -->|claimNext / claimById| L{Lease won?}
+  L -->|no| Q
+  L -->|yes| H[Claimed with lease]
+  H -->|heartbeat| H
+  H -->|lease expired| E{Attempt cap?}
+  E -->|no| Q
+  E -->|yes| X[Blocked]
+```
+
+Checkpoint and evidence:
+
+```mermaid
+flowchart LR
+  A[Running attempt] --> B{Belongs to order?}
+  B -->|no| R[Refuse]
+  B -->|yes| C{Valid state / tree hash / sha256?}
+  C -->|no| R
+  C -->|yes| D[Insert checkpoint or evidence]
+  D --> E[Emit event]
+```
+
+Verdict and resume:
+
+```mermaid
+flowchart LR
+  A[Review or blocked] --> B{Decision}
+  B -->|approve| C[Approved]
+  B -->|reject| D[Rejected]
+  B -->|escalate| E[Blocked]
+  B -->|rollback| F[Ready]
+  D -->|resume| F
+  E -->|resume| F
 ```
 
 ## Storage
