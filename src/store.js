@@ -1,6 +1,5 @@
-import os from "node:os";
-import path from "node:path";
 import { openDatabase } from "./db.js";
+import { resolveConfig } from "./config.js";
 import { newOrderId } from "./ids.js";
 import { APPROVAL_MODES, ORDER_STATUSES } from "./schema.js";
 
@@ -54,12 +53,9 @@ function rowEvent(r) {
   };
 }
 
-export function resolveDbPath() {
-  return process.env.BRAYER_DB || path.join(os.homedir(), ".brayer", "store.sqlite");
-}
-
-export function createStore({ dbPath, logger } = {}) {
-  const finalPath = dbPath || resolveDbPath();
+export function createStore({ dbPath, logger, config } = {}) {
+  const cfg = resolveConfig({ explicit: config ?? {} });
+  const finalPath = dbPath || cfg.dbPath;
   const { sqlite: db } = openDatabase({ dbPath: finalPath, logger });
 
   function insertEvent({ workOrderId, attemptId = null, fromStatus = null, toStatus, kind, actor = "system", note = null, sessionRef = null, at = now() }) {
@@ -145,6 +141,7 @@ export function createStore({ dbPath, logger } = {}) {
 
   return {
     db,
+    config: cfg,
     order: orderApi,
     event: eventApi,
     insertEvent,
