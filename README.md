@@ -30,7 +30,8 @@ The product is a command layer, not another agent:
 Technical operators who run several coding agents across repos and harnesses and
 need to supervise by exception, not by reading every trace. It is local-first and
 vendor-neutral: Claude Code, Codex, OpenCode and future harnesses are adapters,
-not the product.
+not the product. It is also planning-system agnostic: a work order is
+self-contained, and no external planner task id is required.
 
 ## Status
 
