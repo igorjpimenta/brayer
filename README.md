@@ -25,10 +25,44 @@ The MCP tools are:
 | Attempts | `brayer_attempt_start`, `brayer_attempt_finish`, `brayer_attempt_get` |
 | Handoff | `brayer_checkpoint_write`, `brayer_checkpoint_get` |
 
-The lifecycle is:
+## Flows
 
-```text
-order created -> claimed -> attempt running -> checkpoint -> attempt finished
+Order lifecycle:
+
+```mermaid
+flowchart LR
+  A[Order created] -->|status ready| B[Ready]
+  B -->|claim| C[Claimed]
+  C -->|attempt start| D[Running]
+  D -->|checkpoint| D
+  D -->|attempt finished| E[Review]
+  D -->|attempt failed| B
+```
+
+Claim and lease:
+
+```mermaid
+flowchart TD
+  Q[Ready order] -->|claimNext / claimById| L{Lease won?}
+  L -->|no| Q
+  L -->|yes| H[Claimed with lease]
+  H -->|heartbeat| H
+  H -->|lease expired| E{Attempt cap?}
+  E -->|no| Q
+  E -->|yes| X[Blocked]
+```
+
+Checkpoint write:
+
+```mermaid
+flowchart LR
+  A[Running attempt] --> B{Belongs to order?}
+  B -->|no| R[Refuse]
+  B -->|yes| C{State object and tree hash?}
+  C -->|no| R
+  C -->|yes| D[Insert checkpoint]
+  D --> E[Set attempt.checkpoint_id]
+  E --> F[Emit checkpoint.written]
 ```
 
 ## Storage
