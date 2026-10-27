@@ -102,6 +102,33 @@ export function createToolHandlers(store) {
       },
     },
     {
+      name: "brayer_checkpoint_write",
+      description:
+        "Write the structured handoff for a running attempt. The state is an object, not a transcript; treeHash pins the workspace the state describes.",
+      shape: {
+        ...identityShape,
+        orderId: z.string(),
+        attemptId: z.string(),
+        kind: z.optional(z.enum(["auto", "manual", "pre_compact", "stop", "error"])),
+        goal: z.optional(z.string()),
+        state: z.unknown(),
+        summary: z.optional(z.string()),
+        confidence: z.optional(z.number()),
+        resumeRecipe: z.optional(z.string()),
+        treeHash: z.string(),
+      },
+    },
+    {
+      name: "brayer_checkpoint_get",
+      description:
+        "Read a checkpoint by id, or the latest checkpoint for an order. Read-only.",
+      shape: {
+        ...identityShape,
+        checkpointId: z.optional(z.string()),
+        orderId: z.optional(z.string()),
+      },
+    },
+    {
       name: "brayer_order_get",
       description:
         "Read a work order and its event trail. Read-only: it never claims, starts an attempt or changes state.",
@@ -188,6 +215,30 @@ export function createToolHandlers(store) {
         const attempt = store.attempt.get(args.attemptId);
         if (!attempt) throw new Error(`attempt not found: ${args.attemptId}`);
         return { attempt };
+      }
+      case "brayer_checkpoint_write": {
+        const checkpoint = store.checkpoint.write({
+          workOrderId: args.orderId,
+          attemptId: args.attemptId,
+          kind: args.kind ?? "manual",
+          goal: args.goal ?? null,
+          state: args.state,
+          summary: args.summary ?? null,
+          confidence: args.confidence ?? null,
+          resumeRecipe: args.resumeRecipe ?? null,
+          treeHash: args.treeHash,
+          actor: identityKey(identity),
+        });
+        return { checkpoint };
+      }
+      case "brayer_checkpoint_get": {
+        if (args.checkpointId) {
+          const checkpoint = store.checkpoint.get(args.checkpointId);
+          if (!checkpoint) throw new Error(`checkpoint not found: ${args.checkpointId}`);
+          return { checkpoint };
+        }
+        if (!args.orderId) throw new Error("checkpointId or orderId is required");
+        return { checkpoint: store.checkpoint.latest({ workOrderId: args.orderId }) };
       }
       case "brayer_order_get": {
         const order = store.order.get(args.orderId);

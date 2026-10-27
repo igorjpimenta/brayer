@@ -31,7 +31,7 @@ const identity = { brayer_agent: "worker", brayer_session: "s1" };
 test("lists the order tools", () => withClient(async ({ client }) => {
   const { tools } = await client.listTools();
   const names = tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ["brayer_attempt_finish", "brayer_attempt_get", "brayer_attempt_start", "brayer_order_claim", "brayer_order_create", "brayer_order_get", "brayer_order_heartbeat", "brayer_order_next"]);
+  assert.deepEqual(names, ["brayer_attempt_finish", "brayer_attempt_get", "brayer_attempt_start", "brayer_checkpoint_get", "brayer_checkpoint_write", "brayer_order_claim", "brayer_order_create", "brayer_order_get", "brayer_order_heartbeat", "brayer_order_next"]);
 }));
 
 test("creates and reads an order over MCP", () => withClient(async ({ client }) => {
@@ -72,6 +72,33 @@ test("claims a ready order over MCP", () => withClient(async ({ client }) => {
   const body = JSON.parse(claimed.content[0].text);
   assert.equal(body.claimed.status, "claimed");
   assert.equal(body.claimed.assignee, "test:worker:s1");
+}));
+
+test("writes and reads a checkpoint over MCP", () => withClient(async ({ client }) => {
+  const created = await client.callTool({
+    name: "brayer_order_create",
+    arguments: { ...identity, title: "checkpoint task", goal: "do it", acceptance: "done", status: "ready" },
+  });
+  const order = JSON.parse(created.content[0].text).order;
+  await client.callTool({ name: "brayer_order_claim", arguments: { ...identity, orderId: order.id } });
+  const started = await client.callTool({ name: "brayer_attempt_start", arguments: { ...identity, orderId: order.id } });
+  const attempt = JSON.parse(started.content[0].text).attempt;
+
+  const written = await client.callTool({
+    name: "brayer_checkpoint_write",
+    arguments: {
+      ...identity, orderId: order.id, attemptId: attempt.id,
+      state: { next_step: "continue" }, treeHash: "tree-1",
+    },
+  });
+  const checkpoint = JSON.parse(written.content[0].text).checkpoint;
+  assert.match(checkpoint.id, /^CP-/);
+
+  const latest = await client.callTool({
+    name: "brayer_checkpoint_get",
+    arguments: { ...identity, orderId: order.id },
+  });
+  assert.equal(JSON.parse(latest.content[0].text).checkpoint.id, checkpoint.id);
 }));
 
 test("refuses an unstamped call", () => withClient(async ({ client }) => {
