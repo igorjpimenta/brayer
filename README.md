@@ -36,9 +36,9 @@ not the product.
 
 ## Status
 
-Phase 0 (foundation) and Phase 1 (contract) are implemented. The MCP server,
-SQLite store, claim lease, attempts, checkpoints, evidence, verdicts and resume
-are in place. The event stream, harness adapters and packaging are next.
+Brayer is in active development. The MCP server, SQLite store, claim lease,
+attempts, checkpoints, evidence, verdicts, resume and event stream are
+implemented.
 
 ## What works
 
