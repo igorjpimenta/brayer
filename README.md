@@ -27,7 +27,10 @@ The MCP tools are:
 
 ## Flows
 
-Order lifecycle:
+### Order lifecycle
+
+An order moves from ready to review through a claim and a running attempt. A
+failed attempt returns it to ready.
 
 ```mermaid
 flowchart LR
@@ -39,10 +42,13 @@ flowchart LR
   D -->|attempt failed| B
 ```
 
-Claim and lease:
+### Claim and lease
+
+An agent claims a ready order, then keeps the lease alive with heartbeats. An
+expired lease returns to the queue or blocks at the attempt cap.
 
 ```mermaid
-flowchart TD
+flowchart LR
   Q[Ready order] -->|claimNext / claimById| L{Lease won?}
   L -->|no| Q
   L -->|yes| H[Claimed with lease]
@@ -52,7 +58,10 @@ flowchart TD
   E -->|yes| X[Blocked]
 ```
 
-Checkpoint write:
+### Checkpoint write
+
+The store validates the attempt, state and tree hash before it records the
+handoff and emits the event.
 
 ```mermaid
 flowchart LR
