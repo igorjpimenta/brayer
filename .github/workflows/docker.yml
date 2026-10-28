@@ -1,0 +1,35 @@
+name: docker
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir -p data
+      - run: docker build -t brayer:test .
+      - run: |
+          docker run -d --name brayer-test \
+            -p 38293:38293 \
+            -e BRAYER_HARNESS=test \
+            -e BRAYER_MCP_BEARER=secret \
+            -v "$PWD/data:/data" \
+            brayer:test
+      - run: |
+          for i in $(seq 1 30); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:38293/health || true)"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 2
+          done
+          docker logs brayer-test
+          exit 1
+      - run: test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:38293/mcp)" = "401"
+      - run: test -f data/store.sqlite
+      - if: always()
+        run: docker logs brayer-test
+      - if: always()
+        run: docker rm --force brayer-test

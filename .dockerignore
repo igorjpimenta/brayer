@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+test
+plugins
+docs
+*.tgz
+*.png
+.DS_Store
