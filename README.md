@@ -41,10 +41,9 @@ claim webhooks and the OpenCode/OpenClaw identity plugins are implemented.
 
 ## Install
 
-Brayer is published to GitHub Packages. Add the scope once:
+Brayer is published to public npm:
 
 ```sh
-echo '@igorjpimenta:registry=https://npm.pkg.github.com' >> ~/.npmrc
 npm install -g @igorjpimenta/brayer@beta
 brayer --version
 ```
