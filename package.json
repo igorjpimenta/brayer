@@ -1,6 +1,6 @@
 {
   "name": "@igorjpimenta/brayer",
-  "version": "0.1.0",
+  "version": "2026.10.28-beta.1",
   "description": "Vendor-neutral command layer for agent work",
   "type": "module",
   "license": "MIT",
