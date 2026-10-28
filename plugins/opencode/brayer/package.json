@@ -1,6 +1,6 @@
 {
   "name": "@igorjpimenta/brayer-opencode",
-  "version": "2026.10.28-beta.1",
+  "version": "2026.10.28-beta.2",
   "description": "OpenCode companion for Brayer: stamps agent and session identity on Brayer tool calls.",
   "license": "MIT",
   "type": "module",
@@ -18,10 +18,7 @@
   },
   "files": [
     "index.js",
-    "identity.js",
-    "session.js"
-  ],
-  "dependencies": {
-    "@igorjpimenta/brayer": "2026.10.28-beta.1"
-  }
+    "hooks.js",
+    "identity.js"
+  ]
 }

@@ -209,9 +209,25 @@ on turn end, resumes from the latest checkpoint, and receives claim webhooks at
 }
 ```
 
-**OpenCode** — `@igorjpimenta/brayer-opencode` stamps agent/session identity and
-checkpoints on idle, compaction and error. It loads through the OpenCode plugin
-config or a local `file://` entry.
+**OpenCode** — `@igorjpimenta/brayer-opencode` stamps agent/session identity on
+Brayer MCP tool calls. It needs the Brayer MCP server configured and
+`BRAYER_AGENT` when the session agent cannot be captured.
+
+```json
+{
+  "mcp": {
+    "brayer": {
+      "type": "remote",
+      "url": "http://127.0.0.1:38293/mcp",
+      "headers": { "Authorization": "Bearer secret" }
+    }
+  },
+  "plugin": ["@igorjpimenta/brayer-opencode"]
+}
+```
+
+Automatic checkpoint/resume is not part of this release; the agent uses the
+Brayer MCP tools directly.
 
 **Wake bridge** — OpenCode has no plugin HTTP route, so `@igorjpimenta/brayer-wake`
 receives the claim webhook and prompts the claiming session through the
