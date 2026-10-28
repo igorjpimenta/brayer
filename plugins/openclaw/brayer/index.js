@@ -7,6 +7,7 @@ import {
 } from "@igorjpimenta/brayer/plugins/shared/contract.js";
 import { buildBrayerMeta } from "./meta.js";
 import { checkpointPayload, resumeContext, sessionFromContext } from "./session.js";
+import { registerClaimWebhook } from "./webhook.js";
 
 export default definePluginEntry({
   id: "brayer",
@@ -33,6 +34,10 @@ export default definePluginEntry({
         type: "boolean",
         description: "Checkpoint on turn end and session end. Default true when orderId is set.",
       },
+      webhookBearer: {
+        type: "string",
+        description: "Shared secret for POST /api/brayer/claimed. Route stays disarmed until set.",
+      },
     },
   }),
   register: (api) => {
@@ -42,6 +47,7 @@ export default definePluginEntry({
     }
 
     api.on("before_tool_call", (event, ctx) => buildBrayerMeta(event, ctx));
+    registerClaimWebhook({ api, logger: api.logger });
 
     const cfg = api.pluginConfig ?? {};
     const orderId = cfg.orderId ?? process.env.BRAYER_ORDER_ID ?? null;
