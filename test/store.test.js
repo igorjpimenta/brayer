@@ -1,21 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { createStore } from "../src/store.js";
-
-function withStore(fn) {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-store-"));
-  const dbPath = path.join(dir, "store.sqlite");
-  const store = createStore({ dbPath });
-  try {
-    return fn(store, dbPath);
-  } finally {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
+import { withStore, withTempDir } from "./helpers/store.js";
 
 test("creates and reads an order", () => withStore((store) => {
   const order = store.order.create({
@@ -59,8 +46,7 @@ test("refuses an unknown status", () => withStore((store) => {
   }), /invalid order status/);
 }));
 
-test("persists orders across a reopen", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-store-"));
+test("persists orders across a reopen", () => withTempDir((dir) => {
   const dbPath = path.join(dir, "store.sqlite");
   const first = createStore({ dbPath });
   const order = first.order.create({ title: "a", goal: "b", acceptance: "c" });
@@ -72,6 +58,5 @@ test("persists orders across a reopen", () => {
     assert.equal(second.event.list({ workOrderId: order.id }).length, 1);
   } finally {
     second.close();
-    rmSync(dir, { recursive: true, force: true });
   }
-});
+}));

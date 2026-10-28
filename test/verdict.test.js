@@ -1,38 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { createStore } from "../src/store.js";
-
-function withStore(fn) {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-verdict-"));
-  const store = createStore({ dbPath: path.join(dir, "store.sqlite"), config: { blobsPath: path.join(dir, "blobs") } });
-  try {
-    return fn(store);
-  } finally {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
-
-function reviewOrder(store, withEvidence = true) {
-  const order = store.order.create({ title: "task", goal: "do it", acceptance: "done", status: "ready" });
-  store.claim.claimById({ id: order.id, agentId: "claude:worker:s1" });
-  const started = store.attempt.start({ workOrderId: order.id, harness: "claude", agent: "claude:worker:s1" });
-  store.checkpoint.write({
-    workOrderId: order.id, attemptId: started.attempt.id, state: { next_step: "review" },
-    treeHash: "tree-1", actor: "claude:worker:s1",
-  });
-  if (withEvidence) {
-    store.evidence.attach({
-      workOrderId: order.id, attemptId: started.attempt.id, kind: "diff",
-      uri: "file:///tmp/diff.patch", sha256: "a".repeat(64), summary: "diff",
-    });
-  }
-  store.attempt.finish({ attemptId: started.attempt.id, status: "finished", checkpointId: started.attempt.id });
-  return { order: store.order.get(order.id), attempt: started.attempt };
-}
+import { withStore } from "./helpers/store.js";
+import { reviewOrder } from "./helpers/fixtures.js";
 
 test("approves a reviewed order with evidence", () => withStore((store) => {
   const { order, attempt } = reviewOrder(store);

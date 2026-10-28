@@ -1,31 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { createStore } from "../src/store.js";
+import { withStore } from "./helpers/store.js";
+import { runningAttempt } from "./helpers/fixtures.js";
 import { storeFile, verifyFile } from "../src/evidence.js";
-
-function withStore(fn) {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-evidence-"));
-  const store = createStore({
-    dbPath: path.join(dir, "store.sqlite"),
-    config: { blobsPath: path.join(dir, "blobs") },
-  });
-  try {
-    return fn(store, dir);
-  } finally {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
-
-function runningAttempt(store) {
-  const order = store.order.create({ title: "task", goal: "do it", acceptance: "done", status: "ready" });
-  store.claim.claimById({ id: order.id, agentId: "claude:worker:s1" });
-  const started = store.attempt.start({ workOrderId: order.id, harness: "claude", agent: "claude:worker:s1" });
-  return { order, attempt: started.attempt };
-}
 
 test("stores a file by content hash and verifies it", () => withStore((store, dir) => {
   const file = path.join(dir, "diff.patch");
