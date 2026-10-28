@@ -14,6 +14,7 @@ jobs:
       - run: docker build -t brayer:test .
       - run: |
           docker run -d --name brayer-test \
+            --user "$(id -u):$(id -g)" \
             -p 38293:38293 \
             -e BRAYER_HARNESS=test \
             -e BRAYER_MCP_BEARER=secret \
