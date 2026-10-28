@@ -1,7 +1,7 @@
-import { attemptDefs, attemptHandlers } from "./tools/attempts.js";
-import { handoffDefs, handoffHandlers } from "./tools/handoff.js";
-import { orderDefs, orderHandlers } from "./tools/orders.js";
-import { verdictDefs, verdictHandlers } from "./tools/verdicts.js";
+import { attemptDefs, attemptHandlers } from "./attempts.js";
+import { handoffDefs, handoffHandlers } from "./handoff.js";
+import { orderDefs, orderHandlers } from "./orders.js";
+import { verdictDefs, verdictHandlers } from "./verdicts.js";
 
 const TOOL_DEFS = [
   ...orderDefs,

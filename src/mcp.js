@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import * as z from "zod/v4-mini";
-import { createToolHandlers } from "./tools.js";
+import { createToolHandlers } from "./tools/index.js";
 import { assertDeclaration, resolveIdentity } from "./identity.js";
 import { VERSION } from "./version.js";
 
