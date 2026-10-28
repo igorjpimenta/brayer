@@ -8,7 +8,7 @@ import {
   checkpointSession,
   finishSession,
   resumeSession,
-} from "../../../../src/adapters/contract.js";
+} from "../../../../plugins/shared/contract.js";
 import { withStore } from "../../../helpers/store.js";
 import { readyOrder } from "../../../helpers/fixtures.js";
 

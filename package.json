@@ -17,15 +17,12 @@
   "files": [
     "bin/",
     "src/",
+    "plugins/",
     ".migrations/",
     "README.md"
   ],
   "bin": {
     "brayer": "bin/brayer.js"
-  },
-  "exports": {
-    "./adapters/contract": "./src/adapters/contract.js",
-    "./store": "./src/store.js"
   },
   "scripts": {
     "start": "node bin/brayer.js",

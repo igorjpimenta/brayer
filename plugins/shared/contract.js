@@ -1,5 +1,5 @@
-import { storeFile } from "../evidence.js";
-import { identityKey } from "../identity.js";
+import { storeFile } from "../../src/evidence.js";
+import { identityKey } from "../../src/identity.js";
 
 export const CHECKPOINT_TRIGGERS = Object.freeze({
   idle: "auto",
