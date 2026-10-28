@@ -143,6 +143,15 @@ export const playbooks = sqliteTable("playbooks", {
   createdAt: integer("created_at").notNull(),
 });
 
+export const webhookTargets = sqliteTable("webhook_targets", {
+  harness: text("harness").primaryKey(),
+  url: text("url").notNull(),
+  bearer: text("bearer"),
+  timeoutMs: integer("timeout_ms"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
 export const events = sqliteTable("events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   workOrderId: text("work_order_id").notNull().references(() => workOrders.id, { onDelete: "cascade" }),
