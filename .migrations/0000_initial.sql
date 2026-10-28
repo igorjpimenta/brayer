@@ -117,7 +117,6 @@ CREATE TABLE `work_orders` (
 	`model_policy` text,
 	`approval_mode` text DEFAULT 'human' NOT NULL,
 	`parent_id` text,
-	`winch_task_id` text,
 	`assignee` text,
 	`claim_expires_at` integer,
 	`lease_seconds` integer,
@@ -131,5 +130,4 @@ CREATE TABLE `work_orders` (
 );
 --> statement-breakpoint
 CREATE INDEX `idx_work_orders_status_priority` ON `work_orders` (`status`,`priority`);--> statement-breakpoint
-CREATE INDEX `idx_work_orders_assignee` ON `work_orders` (`assignee`);--> statement-breakpoint
-CREATE INDEX `idx_work_orders_winch_task` ON `work_orders` (`winch_task_id`);
+CREATE INDEX `idx_work_orders_assignee` ON `work_orders` (`assignee`);

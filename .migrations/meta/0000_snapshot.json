@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a5a118e2-fdd9-4ddb-be63-58a16eeb5d2c",
+  "id": "0affc281-06ce-4cf5-8a24-6c4d146db24d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "attempts": {
@@ -828,13 +828,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "winch_task_id": {
-          "name": "winch_task_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "assignee": {
           "name": "assignee",
           "type": "text",
@@ -906,13 +899,6 @@
           "name": "idx_work_orders_assignee",
           "columns": [
             "assignee"
-          ],
-          "isUnique": false
-        },
-        "idx_work_orders_winch_task": {
-          "name": "idx_work_orders_winch_task",
-          "columns": [
-            "winch_task_id"
           ],
           "isUnique": false
         }
