@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   core:
-    if: startsWith(github.ref_name, 'brayer-openclaw-') == false && startsWith(github.ref_name, 'brayer-opencode-') == false
+    if: startsWith(github.ref_name, 'brayer-openclaw-') == false && startsWith(github.ref_name, 'brayer-opencode-') == false && startsWith(github.ref_name, 'brayer-wake-') == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
