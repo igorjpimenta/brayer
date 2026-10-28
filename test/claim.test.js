@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { createStore } from "../src/store.js";
-import { withStore, withTempDir } from "./helpers/store.js";
-import { readyOrder } from "./helpers/fixtures.js";
+import { withStore, withTempDir } from "../test-support/store.js";
+import { readyOrder } from "../test-support/fixtures.js";
 
 test("claims a ready order once", () => withStore((store) => {
   const order = readyOrder(store);

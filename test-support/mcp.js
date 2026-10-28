@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createStore } from "../../src/store.js";
-import { createMcpServer } from "../../src/mcp.js";
+import { createStore } from "../src/store.js";
+import { createMcpServer } from "../src/mcp.js";
 
 export const identity = { brayer_agent: "worker", brayer_session: "s1" };
 

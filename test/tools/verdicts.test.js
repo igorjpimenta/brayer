@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { identity, withClient } from "../helpers/mcp.js";
+import { identity, withClient } from "../../test-support/mcp.js";
 
 test("issues an approve verdict over MCP", () => withClient(async ({ client, dir }) => {
   const created = await client.callTool({

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createStore } from "../../src/store.js";
+import { createStore } from "../src/store.js";
 
 export function withStore(fn) {
   const dir = mkdtempSync(path.join(tmpdir(), "brayer-test-"));
