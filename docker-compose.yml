@@ -1,0 +1,23 @@
+services:
+  brayer:
+    build: .
+    image: brayer:local
+    ports:
+      - "38293:38293"
+      - "38294:38294"
+    environment:
+      BRAYER_HARNESS: ${BRAYER_HARNESS:-openclaw}
+      BRAYER_MCP_BEARER: ${BRAYER_MCP_BEARER:?set BRAYER_MCP_BEARER}
+      BRAYER_DB: /data/store.sqlite
+      BRAYER_BLOBS: /data/blobs
+    volumes:
+      - brayer-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:38293/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  brayer-data:
