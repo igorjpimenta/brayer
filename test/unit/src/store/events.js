@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withStore } from "../helpers/store.js";
+import { withStore } from "../../../helpers/store.js";
 
 test("lists events for an order after an id", () => withStore((store) => {
   const order = store.order.create({ title: "t", goal: "g", acceptance: "a", status: "ready" });

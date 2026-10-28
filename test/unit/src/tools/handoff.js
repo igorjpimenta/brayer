@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { identity, withClient } from "../helpers/mcp.js";
+import { identity, withClient } from "../../../helpers/mcp.js";
 
 test("writes and reads a checkpoint over MCP", () => withClient(async ({ client }) => {
   const created = await client.callTool({

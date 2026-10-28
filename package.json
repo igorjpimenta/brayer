@@ -25,7 +25,7 @@
   },
   "scripts": {
     "start": "node bin/brayer.js",
-    "test": "node --test \"**/*.test.js\"",
+    "test": "node --test \"test/unit/**/*.js\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },

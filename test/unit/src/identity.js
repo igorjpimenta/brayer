@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertDeclaration, resolveIdentity, identityKey } from "../src/identity.js";
+import { assertDeclaration, resolveIdentity, identityKey } from "../../../src/identity.js";
 
 test("declaration is required", () => {
   assert.throws(() => assertDeclaration({}), /BRAYER_HARNESS is required/);

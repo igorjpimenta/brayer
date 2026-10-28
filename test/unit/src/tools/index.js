@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withClient } from "../helpers/mcp.js";
+import { withClient } from "../../../helpers/mcp.js";
 
 test("lists the order tools", () => withClient(async ({ client }) => {
   const { tools } = await client.listTools();

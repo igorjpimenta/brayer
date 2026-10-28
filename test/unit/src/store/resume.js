@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withStore } from "../helpers/store.js";
-import { reviewOrder } from "../helpers/fixtures.js";
+import { withStore } from "../../../helpers/store.js";
+import { reviewOrder } from "../../../helpers/fixtures.js";
 
 test("reject then resume returns ready with the checkpoint", () => withStore((store) => {
   const { order } = reviewOrder(store);

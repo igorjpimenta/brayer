@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withStore } from "../helpers/store.js";
-import { runningAttempt } from "../helpers/fixtures.js";
+import { withStore } from "../../../helpers/store.js";
+import { runningAttempt } from "../../../helpers/fixtures.js";
 
 test("attaches evidence to a running attempt", () => withStore((store) => {
   const { order, attempt } = runningAttempt(store);

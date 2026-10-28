@@ -4,9 +4,9 @@ import { once } from "node:events";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createStore } from "../src/store.js";
-import { withStore } from "./helpers/store.js";
-import { startEventServer, lastEventId, eventsSince, toEventMessage } from "../src/events-ws.js";
+import { createStore } from "../../../src/store.js";
+import { withStore } from "../../helpers/store.js";
+import { startEventServer, lastEventId, eventsSince, toEventMessage } from "../../../src/events-ws.js";
 
 test("event helpers read the append-only log", () => withStore((store) => {
   const order = store.order.create({ title: "t", goal: "g", acceptance: "a" });

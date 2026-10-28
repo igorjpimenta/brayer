@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { createStore } from "../../src/store.js";
-import { withStore, withTempDir } from "../helpers/store.js";
+import { createStore } from "../../../../src/store.js";
+import { withStore, withTempDir } from "../../../helpers/store.js";
 
 test("creates and reads an order", () => withStore((store) => {
   const order = store.order.create({
