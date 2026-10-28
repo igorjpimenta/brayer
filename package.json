@@ -17,6 +17,7 @@
   "files": [
     "bin/",
     "src/",
+    "plugins/",
     ".migrations/",
     "README.md"
   ],
