@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolveConfig, DEFAULTS } from "../src/config.js";
+import { resolveConfig, DEFAULTS } from "../../../src/config.js";
 
 test("defaults apply when no explicit or env config exists", () => {
   const cfg = resolveConfig({ env: {} });

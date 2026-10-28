@@ -1,5 +1,6 @@
 import http from "node:http";
 import crypto from "node:crypto";
+import { rowEvent } from "./store/rows.js";
 
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 export const DEFAULT_WS_PORT = 38294;
@@ -27,21 +28,6 @@ function encodeFrame(text) {
     header.writeBigUInt64BE(BigInt(len), 2);
   }
   return Buffer.concat([header, payload]);
-}
-
-function rowEvent(r) {
-  return {
-    id: r.id,
-    kind: r.kind,
-    workOrderId: r.work_order_id,
-    attemptId: r.attempt_id,
-    fromStatus: r.from_status,
-    toStatus: r.to_status,
-    actor: r.actor,
-    note: r.note,
-    sessionRef: r.session_ref,
-    at: r.at,
-  };
 }
 
 export function lastEventId(store) {

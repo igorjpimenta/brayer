@@ -1,27 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { createStore } from "../src/store.js";
-
-function withStore(fn) {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-checkpoint-"));
-  const store = createStore({ dbPath: path.join(dir, "store.sqlite") });
-  try {
-    return fn(store);
-  } finally {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
-
-function runningAttempt(store) {
-  const order = store.order.create({ title: "task", goal: "do it", acceptance: "done", status: "ready" });
-  store.claim.claimById({ id: order.id, agentId: "claude:worker:s1" });
-  const started = store.attempt.start({ workOrderId: order.id, harness: "claude", agent: "claude:worker:s1", sessionRef: "s1" });
-  return { order, attempt: started.attempt };
-}
+import { withStore } from "../../../helpers/store.js";
+import { runningAttempt } from "../../../helpers/fixtures.js";
 
 test("writes a checkpoint on a running attempt", () => withStore((store) => {
   const { order, attempt } = runningAttempt(store);

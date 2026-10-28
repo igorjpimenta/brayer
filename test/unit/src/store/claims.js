@@ -1,33 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
-import { createStore } from "../src/store.js";
-
-function withStore(fn) {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-claim-"));
-  const store = createStore({ dbPath: path.join(dir, "store.sqlite") });
-  try {
-    return fn(store);
-  } finally {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
-
-function ready(store, overrides = {}) {
-  return store.order.create({
-    title: "task",
-    goal: "do the thing",
-    acceptance: "the thing is done",
-    status: "ready",
-    ...overrides,
-  });
-}
+import { createStore } from "../../../../src/store.js";
+import { withStore, withTempDir } from "../../../helpers/store.js";
+import { readyOrder } from "../../../helpers/fixtures.js";
 
 test("claims a ready order once", () => withStore((store) => {
-  const order = ready(store);
+  const order = readyOrder(store);
   const first = store.claim.claimById({ id: order.id, agentId: "claude:worker:s1" });
   assert.equal(first.claimed.status, "claimed");
   assert.equal(first.claimed.assignee, "claude:worker:s1");
@@ -41,21 +20,21 @@ test("claims a ready order once", () => withStore((store) => {
 }));
 
 test("claimNext picks the highest-priority ready order", () => withStore((store) => {
-  ready(store, { title: "low", priority: 10 });
-  const high = ready(store, { title: "high", priority: 90 });
+  readyOrder(store, { title: "low", priority: 10 });
+  const high = readyOrder(store, { title: "high", priority: 90 });
   const res = store.claim.claimNext({ agentId: "claude:worker:s1" });
   assert.equal(res.claimed.id, high.id);
 }));
 
 test("refuses an order assigned to another agent", () => withStore((store) => {
-  const order = ready(store);
+  const order = readyOrder(store);
   store.db.prepare("UPDATE work_orders SET assignee='claude:other:s9' WHERE id=?").run(order.id);
   const res = store.claim.claimById({ id: order.id, agentId: "claude:worker:s1" });
   assert.equal(res.reason, "assigned_elsewhere");
 }));
 
 test("heartbeat extends the lease", () => withStore((store) => {
-  const order = ready(store);
+  const order = readyOrder(store);
   const claimed = store.claim.claimById({ id: order.id, agentId: "claude:worker:s1", leaseSeconds: 1 }).claimed;
   const before = claimed.claimExpiresAt;
   const renewed = store.claim.heartbeat({ id: order.id, agentId: "claude:worker:s1", leaseSeconds: 60 });
@@ -63,7 +42,7 @@ test("heartbeat extends the lease", () => withStore((store) => {
 }));
 
 test("sweep releases an expired lease", () => withStore((store) => {
-  const order = ready(store);
+  const order = readyOrder(store);
   store.claim.claimById({ id: order.id, agentId: "claude:worker:s1", leaseSeconds: 0 });
   const res = store.claim.sweepExpired({ at: Date.now() + 1 });
   assert.equal(res.released, 1);
@@ -72,7 +51,7 @@ test("sweep releases an expired lease", () => withStore((store) => {
 }));
 
 test("sweep blocks after the attempt cap", () => withStore((store) => {
-  const order = ready(store);
+  const order = readyOrder(store);
   for (let i = 0; i < 2; i++) {
     store.claim.claimById({ id: order.id, agentId: "claude:worker:s1", leaseSeconds: 0 });
     store.claim.sweepExpired({ at: Date.now() + 1 });
@@ -85,13 +64,12 @@ test("sweep blocks after the attempt cap", () => withStore((store) => {
   assert.equal(blocked.attemptCount, 3);
 }));
 
-test("two stores race and only one claim wins", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-race-"));
+test("two stores race and only one claim wins", () => withTempDir((dir) => {
   const dbPath = path.join(dir, "store.sqlite");
   const a = createStore({ dbPath });
   const b = createStore({ dbPath });
   try {
-    const order = ready(a);
+    const order = readyOrder(a);
     const one = a.claim.claimById({ id: order.id, agentId: "claude:a:s1" });
     const two = b.claim.claimById({ id: order.id, agentId: "claude:b:s2" });
     assert.ok(one.claimed);
@@ -100,6 +78,5 @@ test("two stores race and only one claim wins", () => {
   } finally {
     a.close();
     b.close();
-    rmSync(dir, { recursive: true, force: true });
   }
-});
+}));

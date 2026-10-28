@@ -1,31 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { createStore } from "../src/store.js";
-
-function withStore(fn) {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-attempt-"));
-  const store = createStore({ dbPath: path.join(dir, "store.sqlite") });
-  try {
-    return fn(store);
-  } finally {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
-
-function claimedOrder(store) {
-  const order = store.order.create({
-    title: "task",
-    goal: "do it",
-    acceptance: "it is done",
-    status: "ready",
-  });
-  const res = store.claim.claimById({ id: order.id, agentId: "claude:worker:s1" });
-  return res.claimed;
-}
+import { withStore } from "../../../helpers/store.js";
+import { claimedOrder } from "../../../helpers/fixtures.js";
 
 test("starts and finishes an attempt", () => withStore((store) => {
   const order = claimedOrder(store);

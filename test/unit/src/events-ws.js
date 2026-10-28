@@ -1,22 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { once } from "node:events";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { once } from "node:events";
-import { createStore } from "../src/store.js";
-import { startEventServer, lastEventId, eventsSince, toEventMessage } from "../src/events-ws.js";
-
-function withStore(fn) {
-  const dir = mkdtempSync(path.join(tmpdir(), "brayer-events-"));
-  const store = createStore({ dbPath: path.join(dir, "store.sqlite") });
-  try {
-    return fn(store);
-  } finally {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
+import { createStore } from "../../../src/store.js";
+import { withStore } from "../../helpers/store.js";
+import { startEventServer, lastEventId, eventsSince, toEventMessage } from "../../../src/events-ws.js";
 
 test("event helpers read the append-only log", () => withStore((store) => {
   const order = store.order.create({ title: "t", goal: "g", acceptance: "a" });
