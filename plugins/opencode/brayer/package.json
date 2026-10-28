@@ -16,6 +16,11 @@
     ".": "./index.js"
   },
   "files": [
-    "index.js"
-  ]
+    "index.js",
+    "identity.js",
+    "session.js"
+  ],
+  "dependencies": {
+    "@igorjpimenta/brayer": "2026.10.28-beta.1"
+  }
 }
