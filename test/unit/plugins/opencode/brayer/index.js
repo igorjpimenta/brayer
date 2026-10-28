@@ -4,7 +4,7 @@ import {
   createBrayerHooks,
   isBrayerTool,
   stampBrayerIdentity,
-} from "../../../../plugins/opencode/brayer.js";
+} from "../../../../../plugins/opencode/brayer/index.js";
 
 test("matches brayer tools", () => {
   assert.equal(isBrayerTool("brayer_order_get"), true);
