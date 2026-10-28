@@ -1,0 +1,28 @@
+{
+  "name": "@igorjpimenta/brayer-wake",
+  "version": "2026.10.28-beta.1",
+  "description": "OpenCode wake bridge for Brayer claim webhooks.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igorjpimenta/brayer.git",
+    "directory": "plugins/wake/brayer"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "bin": {
+    "brayer-wake": "bin/brayer-wake.js"
+  },
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "bin/",
+    "index.js"
+  ],
+  "dependencies": {
+    "@opencode-ai/sdk": "1.19.3"
+  }
+}
