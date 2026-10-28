@@ -7,8 +7,6 @@ the attempts made against it, the handoff checkpoint, the evidence returned, and
 the verdict — so a fleet of coding agents can be supervised by exception instead
 of by transcript.
 
-The product positioning is in [docs/positioning.md](docs/positioning.md).
-
 ## Why Brayer
 
 A brayer is the printer's small hand roller that applies ink evenly to type. It
