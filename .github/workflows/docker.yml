@@ -30,6 +30,6 @@ jobs:
       - run: test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:38293/mcp)" = "401"
       - run: test -f data/store.sqlite
       - if: always()
-        run: docker logs brayer-test
+        run: docker logs brayer-test || true
       - if: always()
-        run: docker rm --force brayer-test
+        run: docker rm --force brayer-test || true
