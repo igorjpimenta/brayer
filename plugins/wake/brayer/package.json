@@ -10,7 +10,8 @@
     "directory": "plugins/wake/brayer"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "bin": {
     "brayer-wake": "bin/brayer-wake.js"

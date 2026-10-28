@@ -16,3 +16,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Package smoke
+        run: |
+          tmp="$RUNNER_TEMP/brayer-package"
+          mkdir -p "$tmp"
+          npm pack --pack-destination "$tmp"
+          cd "$tmp"
+          npm init -y >/dev/null
+          npm install ./igorjpimenta-brayer-*.tgz >/dev/null
+          ./node_modules/.bin/brayer --version
+          BRAYER_DB="$tmp/store.sqlite" ./node_modules/.bin/brayer status

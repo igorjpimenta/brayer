@@ -21,8 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://npm.pkg.github.com
-          scope: "@igorjpimenta"
+          registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm test
       - name: Resolve channel
@@ -50,7 +49,7 @@ jobs:
           esac
       - run: npm publish --tag ${{ steps.channel.outputs.tag }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   openclaw:
     if: startsWith(github.ref_name, 'brayer-openclaw-')
@@ -63,8 +62,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://npm.pkg.github.com
-          scope: "@igorjpimenta"
+          registry-url: https://registry.npmjs.org
       - name: Resolve channel
         id: channel
         run: |
@@ -90,7 +88,7 @@ jobs:
           esac
       - run: npm publish --tag ${{ steps.channel.outputs.tag }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   opencode:
     if: startsWith(github.ref_name, 'brayer-opencode-')
@@ -103,8 +101,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://npm.pkg.github.com
-          scope: "@igorjpimenta"
+          registry-url: https://registry.npmjs.org
       - name: Resolve channel
         id: channel
         run: |
@@ -130,7 +127,7 @@ jobs:
           esac
       - run: npm publish --tag ${{ steps.channel.outputs.tag }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   wake:
     if: startsWith(github.ref_name, 'brayer-wake-')
@@ -143,8 +140,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://npm.pkg.github.com
-          scope: "@igorjpimenta"
+          registry-url: https://registry.npmjs.org
       - name: Resolve channel
         id: channel
         run: |
@@ -170,4 +166,4 @@ jobs:
           esac
       - run: npm publish --tag ${{ steps.channel.outputs.tag }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

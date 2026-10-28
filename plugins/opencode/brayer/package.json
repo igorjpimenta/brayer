@@ -10,7 +10,8 @@
     "directory": "plugins/opencode/brayer"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "exports": {
     ".": "./index.js"

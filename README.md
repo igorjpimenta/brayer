@@ -29,21 +29,34 @@ The product is a command layer, not another agent:
 
 Technical operators who run several coding agents across repos and harnesses and
 need to supervise by exception, not by reading every trace. It is local-first and
-vendor-neutral: Claude Code, Codex, OpenCode and future harnesses are adapters,
-not the product. It is also planning-system agnostic: a work order is
+vendor-neutral: OpenCode, OpenClaw and future harnesses are adapters, not the
+product. It is also planning-system agnostic: a work order is
 self-contained, and no external planner task id is required.
 
 ## Status
 
 Brayer is in active development. The MCP server, SQLite store, claim lease,
-attempts, checkpoints, evidence, verdicts, resume and event stream are
-implemented.
+attempts, checkpoints, evidence, verdicts, resume, event stream, HTTP MCP,
+claim webhooks and the OpenCode/OpenClaw identity plugins are implemented.
+
+## Install
+
+Brayer is published to public npm:
+
+```sh
+npm install -g @igorjpimenta/brayer@beta
+brayer --version
+```
 
 ## What works
 
 ```sh
 # MCP over stdio for one harness
-BRAYER_HARNESS=claude brayer serve --mcp stdio
+BRAYER_HARNESS=opencode brayer serve --mcp stdio
+
+# MCP over HTTP with bearer auth
+BRAYER_HARNESS=openclaw BRAYER_MCP_BEARER=secret \
+  brayer serve --mcp http --port 38293
 
 # Event stream for dashboards and inboxes
 brayer serve --ws --port 38294
@@ -51,6 +64,11 @@ brayer serve --ws --port 38294
 # Read the queue
 brayer status
 brayer status --json
+
+# Register a claim wake target
+brayer webhook set --harness opencode \
+  --url http://127.0.0.1:38295/api/brayer/claimed --bearer secret
+brayer webhook test --harness opencode
 ```
 
 The MCP tools are:
@@ -153,6 +171,14 @@ malformed values; unknown explicit keys refuse as typos.
 | Attempt cap | `BRAYER_MAX_ATTEMPTS` | `3` |
 | HTTP port | `BRAYER_HTTP_PORT` | `38293` |
 | WS port | `BRAYER_WS_PORT` | `38294` |
+| HTTP MCP bearer | `BRAYER_MCP_BEARER` | required for HTTP |
+| Claim webhook URL | `BRAYER_CLAIM_WEBHOOK_URL` | unset |
+| Claim webhook bearer | `BRAYER_CLAIM_WEBHOOK_BEARER` | unset |
+| Claim webhook timeout | `BRAYER_CLAIM_WEBHOOK_TIMEOUT_MS` | `3000` |
+| Per-harness webhooks | `BRAYER_CLAIM_WEBHOOKS` | `{}` |
+| Wake bridge port | `BRAYER_WAKE_PORT` | `38295` |
+| Wake bridge bearer | `BRAYER_WAKE_BEARER` | unset |
+| OpenCode server URL | `BRAYER_OPENCODE_URL` | `http://127.0.0.1:4096` |
 
 ## Identity
 
@@ -160,6 +186,52 @@ Every call is keyed `harness:agent:session`. The harness is declared at
 construction (`BRAYER_HARNESS`); the agent and session are stamped per call via
 `_meta.brayer` with `brayer_agent` / `brayer_session` as the fallback. Missing or
 mismatched identity refuses the call.
+
+## Harnesses
+
+An adapter attaches an existing order; it never creates work.
+
+**OpenClaw** — `@igorjpimenta/brayer-openclaw` stamps `_meta.brayer`, checkpoints
+on turn end, resumes from the latest checkpoint, and receives claim webhooks at
+`POST /api/brayer/claimed`.
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "brayer": {
+        "command": "brayer",
+        "args": ["serve", "--mcp", "stdio"],
+        "env": { "BRAYER_HARNESS": "openclaw" }
+      }
+    }
+  }
+}
+```
+
+**OpenCode** — `@igorjpimenta/brayer-opencode` stamps agent/session identity and
+checkpoints on idle, compaction and error. It loads through the OpenCode plugin
+config or a local `file://` entry.
+
+**Wake bridge** — OpenCode has no plugin HTTP route, so `@igorjpimenta/brayer-wake`
+receives the claim webhook and prompts the claiming session through the
+OpenCode SDK.
+
+## Docker
+
+```sh
+BRAYER_MCP_BEARER=secret docker compose up --build
+```
+
+The image stores SQLite and blobs on the `brayer-data` volume at `/data`;
+HTTP MCP is exposed on 38293 and the event stream on 38294.
+
+## Release
+
+Versions are CalVer (`YYYY.MM.DD-beta.N`). Tags are bare for core and prefixed
+for adapters: `brayer-openclaw-<calver>`, `brayer-opencode-<calver>`,
+`brayer-wake-<calver>`. Prereleases publish to `beta`; stable tags publish to
+`latest`.
 
 ## Development
 
