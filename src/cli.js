@@ -1,5 +1,5 @@
 import { createStore } from "./store.js";
-import { startMcpServer } from "./mcp.js";
+import { startMcpHttpServer, startMcpServer } from "./mcp.js";
 import { startEventServer } from "./events-ws.js";
 import { VERSION } from "./version.js";
 import { webhookConfig } from "./claim-webhook.js";
@@ -9,6 +9,7 @@ const usage = `brayer ${VERSION}
 Usage:
   brayer --version
   brayer serve --mcp stdio
+  brayer serve --mcp http --port 38293 [--host 127.0.0.1]
   brayer serve --ws --port 38294
   brayer status [--json]
   brayer webhook set --harness H --url U [--bearer B] [--timeout-ms N]
@@ -126,11 +127,27 @@ export async function main(argv = process.argv.slice(2), { env = process.env, lo
     const mcpIndex = rest.indexOf("--mcp");
     const transport = mcpIndex >= 0 ? rest[mcpIndex + 1] : null;
     if (transport) {
-      if (transport !== "stdio") throw new Error("brayer: serve --mcp currently supports only stdio");
-      if (!env.BRAYER_HARNESS) throw new Error("brayer: BRAYER_HARNESS is required for stdio");
+      if (!env.BRAYER_HARNESS) throw new Error("brayer: BRAYER_HARNESS is required for MCP");
       const store = createStore({ dbPath: env.BRAYER_DB || undefined });
-      await startMcpServer({ store, base: { harness: env.BRAYER_HARNESS }, logger });
-      return;
+      if (transport === "stdio") {
+        await startMcpServer({ store, base: { harness: env.BRAYER_HARNESS }, logger });
+        return;
+      }
+      if (transport === "http") {
+        if (!env.BRAYER_MCP_BEARER) throw new Error("brayer: BRAYER_MCP_BEARER is required for HTTP");
+        const port = Number(flagValue(rest, "--port") ?? env.BRAYER_HTTP_PORT ?? 38293);
+        const host = flagValue(rest, "--host") ?? "127.0.0.1";
+        await startMcpHttpServer({
+          store,
+          base: { harness: env.BRAYER_HARNESS },
+          port,
+          host,
+          bearer: env.BRAYER_MCP_BEARER,
+          logger,
+        });
+        return;
+      }
+      throw new Error("brayer: serve --mcp supports stdio or http");
     }
 
     if (rest.includes("--ws")) {
