@@ -23,6 +23,10 @@
   "bin": {
     "brayer": "bin/brayer.js"
   },
+  "exports": {
+    "./adapters/contract": "./src/adapters/contract.js",
+    "./store": "./src/store.js"
+  },
   "scripts": {
     "start": "node bin/brayer.js",
     "test": "node --test \"test/unit/**/*.js\"",
