@@ -1,6 +1,6 @@
 import { now } from "./util.js";
 
-export function createClaimApi({ db, cfg, insertEvent, orderApi }) {
+export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim }) {
   const claimApi = {
     claimById({ id, agentId, sessionRef = null, leaseSeconds = cfg.leaseSeconds } = {}) {
       if (!id) throw new Error("order id is required");
@@ -27,7 +27,9 @@ export function createClaimApi({ db, cfg, insertEvent, orderApi }) {
           actor: agentId, note: "claim", sessionRef, at: t,
         });
         db.exec("COMMIT");
-        return { claimed: orderApi.get(id), reason: null };
+        const claimed = orderApi.get(id);
+        notifyClaim?.({ order: claimed, agentId, sessionRef, at: t });
+        return { claimed, reason: null };
       } catch (err) {
         db.exec("ROLLBACK");
         throw err;

@@ -3,6 +3,8 @@ import { resolveConfig } from "./config.js";
 import { createEventApi } from "./store/events.js";
 import { createOrderApi } from "./store/orders.js";
 import { createClaimApi } from "./store/claims.js";
+import { createWebhookApi } from "./store/webhooks.js";
+import { claimPayload, notifyClaim } from "./claim-webhook.js";
 import { createAttemptApi } from "./store/attempts.js";
 import { createCheckpointApi } from "./store/checkpoints.js";
 import { createEvidenceApi } from "./store/evidence.js";
@@ -16,7 +18,17 @@ export function createStore({ dbPath, logger, config } = {}) {
 
   const { insertEvent, eventApi } = createEventApi({ db });
   const order = createOrderApi({ db, insertEvent });
-  const claim = createClaimApi({ db, cfg, insertEvent, orderApi: order });
+  const webhook = createWebhookApi({ db });
+  const claim = createClaimApi({
+    db,
+    cfg,
+    insertEvent,
+    orderApi: order,
+    notifyClaim: (payload) => {
+      const body = claimPayload(payload);
+      return notifyClaim(cfg, body, { logger, dbEntry: webhook.get(body.session.harness) });
+    },
+  });
   const attempt = createAttemptApi({ db, insertEvent, orderApi: order });
   const checkpoint = createCheckpointApi({ db, insertEvent, attemptApi: attempt });
   const evidence = createEvidenceApi({ db, insertEvent, attemptApi: attempt });
@@ -33,6 +45,7 @@ export function createStore({ dbPath, logger, config } = {}) {
     evidence,
     verdict,
     resume,
+    webhook,
     event: eventApi,
     insertEvent,
     close() { db.close(); },
