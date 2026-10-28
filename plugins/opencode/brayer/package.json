@@ -1,0 +1,21 @@
+{
+  "name": "@igorjpimenta/brayer-opencode",
+  "version": "2026.10.28-beta.1",
+  "description": "OpenCode companion for Brayer: stamps agent and session identity on Brayer tool calls.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igorjpimenta/brayer.git",
+    "directory": "plugins/opencode/brayer"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js"
+  ]
+}

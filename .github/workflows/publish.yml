@@ -1,0 +1,132 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - "[0-9]*"
+      - "brayer-openclaw-[0-9]*"
+      - "brayer-opencode-[0-9]*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  core:
+    if: startsWith(github.ref_name, 'brayer-openclaw-') == false && startsWith(github.ref_name, 'brayer-opencode-') == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: "@igorjpimenta"
+      - run: npm ci
+      - run: npm test
+      - name: Resolve channel
+        id: channel
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          if ! printf '%s' "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::tag $GITHUB_REF_NAME is not CalVer with optional prerelease"
+            exit 1
+          fi
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag $GITHUB_REF_NAME != package.json $PKG"
+            exit 1
+          fi
+          TAG_DATE="$(printf '%s' "${TAG%%-*}" | tr . -)"
+          UTC_DATE="$(date -u +%Y-%m-%d)"
+          if [ "$TAG_DATE" != "$UTC_DATE" ]; then
+            echo "::error::tag date $TAG_DATE != UTC date $UTC_DATE"
+            exit 1
+          fi
+          case "$TAG" in
+            *-* ) echo "tag=beta" >> "$GITHUB_OUTPUT" ;;
+            * )   echo "tag=latest" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - run: npm publish --tag ${{ steps.channel.outputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  openclaw:
+    if: startsWith(github.ref_name, 'brayer-openclaw-')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/openclaw/brayer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: "@igorjpimenta"
+      - name: Resolve channel
+        id: channel
+        run: |
+          TAG="${GITHUB_REF_NAME#brayer-openclaw-}"
+          if ! printf '%s' "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::tag $GITHUB_REF_NAME is not brayer-openclaw-<CalVer>"
+            exit 1
+          fi
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag $GITHUB_REF_NAME != plugin package.json $PKG"
+            exit 1
+          fi
+          TAG_DATE="$(printf '%s' "${TAG%%-*}" | tr . -)"
+          UTC_DATE="$(date -u +%Y-%m-%d)"
+          if [ "$TAG_DATE" != "$UTC_DATE" ]; then
+            echo "::error::tag date $TAG_DATE != UTC date $UTC_DATE"
+            exit 1
+          fi
+          case "$TAG" in
+            *-* ) echo "tag=beta" >> "$GITHUB_OUTPUT" ;;
+            * )   echo "tag=latest" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - run: npm publish --tag ${{ steps.channel.outputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  opencode:
+    if: startsWith(github.ref_name, 'brayer-opencode-')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/opencode/brayer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: "@igorjpimenta"
+      - name: Resolve channel
+        id: channel
+        run: |
+          TAG="${GITHUB_REF_NAME#brayer-opencode-}"
+          if ! printf '%s' "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::tag $GITHUB_REF_NAME is not brayer-opencode-<CalVer>"
+            exit 1
+          fi
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag $GITHUB_REF_NAME != plugin package.json $PKG"
+            exit 1
+          fi
+          TAG_DATE="$(printf '%s' "${TAG%%-*}" | tr . -)"
+          UTC_DATE="$(date -u +%Y-%m-%d)"
+          if [ "$TAG_DATE" != "$UTC_DATE" ]; then
+            echo "::error::tag date $TAG_DATE != UTC date $UTC_DATE"
+            exit 1
+          fi
+          case "$TAG" in
+            *-* ) echo "tag=beta" >> "$GITHUB_OUTPUT" ;;
+            * )   echo "tag=latest" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - run: npm publish --tag ${{ steps.channel.outputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
