@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withStore } from "../test-support/store.js";
-import { claimedOrder } from "../test-support/fixtures.js";
+import { withStore } from "./helpers/store.js";
+import { claimedOrder } from "./helpers/fixtures.js";
 
 test("starts and finishes an attempt", () => withStore((store) => {
   const order = claimedOrder(store);

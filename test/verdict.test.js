@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withStore } from "../test-support/store.js";
-import { reviewOrder } from "../test-support/fixtures.js";
+import { withStore } from "./helpers/store.js";
+import { reviewOrder } from "./helpers/fixtures.js";
 
 test("approves a reviewed order with evidence", () => withStore((store) => {
   const { order, attempt } = reviewOrder(store);
