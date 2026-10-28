@@ -35,9 +35,9 @@ self-contained, and no external planner task id is required.
 
 ## Status
 
-Phase 0 (foundation) and Phase 1 (contract) are implemented. The MCP server,
-SQLite store, claim lease, attempts, checkpoints, evidence, verdicts and resume
-are in place. The event stream, harness adapters and packaging are next.
+Brayer is in active development. The MCP server, SQLite store, claim lease,
+attempts, checkpoints, evidence, verdicts, resume and event stream are
+implemented.
 
 ## What works
 
@@ -65,10 +65,72 @@ The MCP tools are:
 
 ## Flows
 
-```text
-order created -> claimed -> attempt running -> checkpoint + evidence
-             -> attempt finished -> review -> verdict -> approved / rejected / blocked
-             -> resume returns the order to ready with its latest checkpoint
+### Order lifecycle
+
+An order moves from ready through a claim and a running attempt to review. The
+verdict decides where it lands, and resume returns rejected or blocked work to
+ready.
+
+```mermaid
+flowchart LR
+  A[Order created] -->|status ready| B[Ready]
+  B -->|claim| C[Claimed]
+  C -->|attempt start| D[Running]
+  D -->|checkpoint / evidence| D
+  D -->|attempt finished| E[Review]
+  D -->|attempt failed| B
+  E -->|approve| F[Approved]
+  E -->|reject| G[Rejected]
+  E -->|escalate| H[Blocked]
+  G -->|resume| B
+  H -->|resume| B
+```
+
+### Claim and lease
+
+An agent claims a ready order, then keeps the lease alive with heartbeats. An
+expired lease returns to the queue or blocks at the attempt cap.
+
+```mermaid
+flowchart LR
+  Q[Ready order] -->|claimNext / claimById| L{Lease won?}
+  L -->|no| Q
+  L -->|yes| H[Claimed with lease]
+  H -->|heartbeat| H
+  H -->|lease expired| E{Attempt cap?}
+  E -->|no| Q
+  E -->|yes| X[Blocked]
+```
+
+### Checkpoint and evidence
+
+The store validates the attempt and the handoff or proof before it records the
+row and emits the event.
+
+```mermaid
+flowchart LR
+  A[Running attempt] --> B{Belongs to order?}
+  B -->|no| R[Refuse]
+  B -->|yes| C{Valid state / tree hash / sha256?}
+  C -->|no| R
+  C -->|yes| D[Insert checkpoint or evidence]
+  D --> E[Emit event]
+```
+
+### Verdict and resume
+
+A verdict closes review or blocked work. Reject and escalate remain resumable;
+rollback returns the order to ready directly.
+
+```mermaid
+flowchart LR
+  A[Review or blocked] --> B{Decision}
+  B -->|approve| C[Approved]
+  B -->|reject| D[Rejected]
+  B -->|escalate| E[Blocked]
+  B -->|rollback| F[Ready]
+  D -->|resume| F
+  E -->|resume| F
 ```
 
 ## Storage
