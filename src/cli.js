@@ -12,6 +12,7 @@ Usage:
   brayer serve --mcp http --port 38293 [--host 127.0.0.1]
   brayer serve --ws --port 38294
   brayer status [--json]
+  brayer sweep [--max-attempts N]
   brayer webhook set --harness H --url U [--bearer B] [--timeout-ms N]
   brayer webhook list
   brayer webhook remove --harness H
@@ -121,6 +122,22 @@ export async function main(argv = process.argv.slice(2), { env = process.env, lo
     } finally {
       store.close();
     }
+  }
+
+  if (command === "sweep") {
+    const values = flagMap(rest);
+    const maxAttempts = values["max-attempts"] !== undefined ? Number(values["max-attempts"]) : undefined;
+    if (maxAttempts !== undefined && (!Number.isInteger(maxAttempts) || maxAttempts < 1)) {
+      throw new Error("brayer: --max-attempts must be a positive integer");
+    }
+    const store = createStore({ dbPath: env.BRAYER_DB || undefined });
+    try {
+      const result = store.claim.sweepExpired(maxAttempts === undefined ? {} : { maxAttempts });
+      console.log(JSON.stringify(result, null, 2));
+    } finally {
+      store.close();
+    }
+    return;
   }
 
   if (command === "serve") {
