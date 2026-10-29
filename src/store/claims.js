@@ -16,17 +16,16 @@ export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim, lo
     clearExpiry(id);
     const delay = Number(expiresAt) - Date.now();
     if (!Number.isFinite(delay) || delay <= 0) return;
-    const run = () => {
-      timers.delete(id);
-      try {
-        claimApi.sweepExpired({ at: Date.now() });
-      } catch (err) {
-        logger?.warn?.(`brayer: lease sweep failed: ${err?.message ?? err}`);
-      }
-    };
     const timer = delay > MAX_TIMER_MS
       ? setTimeout(() => scheduleExpiry(id, expiresAt), MAX_TIMER_MS)
-      : setTimeout(run, delay);
+      : setTimeout(() => {
+          timers.delete(id);
+          try {
+            claimApi.sweepExpired({ at: Date.now() + 5 });
+          } catch (err) {
+            logger?.warn?.(`brayer: lease sweep failed: ${err?.message ?? err}`);
+          }
+        }, delay + 25);
     timer.unref?.();
     timers.set(id, timer);
   }
