@@ -55,7 +55,14 @@ jobs:
           TAG="$GITHUB_REF_NAME"
           PKG_NAME="$(node -p "require('./package.json').name")"
           PKG_VERSION="$(node -p "require('./package.json').version")"
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag               --title "$TAG"               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
+          PRERELEASE=""
+          case "$TAG" in
+            *-* ) PRERELEASE="--prerelease" ;;
+          esac
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "$TAG" $PRERELEASE \
+              --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -102,7 +109,14 @@ jobs:
           TAG="$GITHUB_REF_NAME"
           PKG_NAME="$(node -p "require('./package.json').name")"
           PKG_VERSION="$(node -p "require('./package.json').version")"
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag               --title "$TAG"               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
+          PRERELEASE=""
+          case "$TAG" in
+            *-* ) PRERELEASE="--prerelease" ;;
+          esac
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "$TAG" $PRERELEASE \
+              --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -149,7 +163,14 @@ jobs:
           TAG="$GITHUB_REF_NAME"
           PKG_NAME="$(node -p "require('./package.json').name")"
           PKG_VERSION="$(node -p "require('./package.json').version")"
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag               --title "$TAG"               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
+          PRERELEASE=""
+          case "$TAG" in
+            *-* ) PRERELEASE="--prerelease" ;;
+          esac
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "$TAG" $PRERELEASE \
+              --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: steps.channel.outputs.tag == 'beta'
