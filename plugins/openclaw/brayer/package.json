@@ -1,6 +1,6 @@
 {
   "name": "@igorjpimenta/brayer-openclaw",
-  "version": "2026.10.28-beta.1",
+  "version": "2026.10.29-beta.1",
   "description": "OpenClaw companion for Brayer: stamps caller identity on Brayer MCP tool calls.",
   "license": "MIT",
   "type": "module",
@@ -32,6 +32,6 @@
     "openclaw": ">=2026.5.18"
   },
   "dependencies": {
-    "@igorjpimenta/brayer": "2026.10.28-beta.1"
+    "@igorjpimenta/brayer": "2026.10.29-beta.1"
   }
 }
