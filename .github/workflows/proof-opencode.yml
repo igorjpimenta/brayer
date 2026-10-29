@@ -1,0 +1,25 @@
+name: proof-opencode
+
+on:
+  workflow_dispatch:
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Restore OpenCode auth
+        run: |
+          test -n "$OPENCODE_AUTH_JSON" || { echo "set OPENCODE_AUTH_JSON repository secret"; exit 1; }
+          mkdir -p ~/.local/share/opencode
+          printf '%s' "$OPENCODE_AUTH_JSON" > ~/.local/share/opencode/auth.json
+        env:
+          OPENCODE_AUTH_JSON: ${{ secrets.OPENCODE_AUTH_JSON }}
+      - run: npm run proof:opencode
+        env:
+          OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'opencode/deepseek-v4.1-flash-free' }}
