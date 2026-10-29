@@ -10,7 +10,7 @@ on:
       - "brayer-wake-[0-9]*"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -51,6 +51,14 @@ jobs:
       - run: npm publish --tag ${{ steps.channel.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub release
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          PKG_NAME="$(node -p "require('./package.json').name")"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag               --title "$TAG"               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   openclaw:
     if: startsWith(github.ref_name, 'brayer-openclaw-')
@@ -90,6 +98,14 @@ jobs:
       - run: npm publish --tag ${{ steps.channel.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub release
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          PKG_NAME="$(node -p "require('./package.json').name")"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag               --title "$TAG"               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   opencode:
     if: startsWith(github.ref_name, 'brayer-opencode-')
@@ -129,6 +145,14 @@ jobs:
       - run: npm publish --tag ${{ steps.channel.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub release
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          PKG_NAME="$(node -p "require('./package.json').name")"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag               --title "$TAG"               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: steps.channel.outputs.tag == 'beta'
         run: npm dist-tag add @igorjpimenta/brayer-opencode@$(node -p "require('./package.json').version") latest
         env:
@@ -172,3 +196,11 @@ jobs:
       - run: npm publish --tag ${{ steps.channel.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub release
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          PKG_NAME="$(node -p "require('./package.json').name")"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag               --title "$TAG"               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
