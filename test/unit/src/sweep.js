@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { runSweep } from "../../../src/sweep.js";
 import { createStore } from "../../../src/store.js";
 import { readyOrder } from "../../helpers/fixtures.js";
 
