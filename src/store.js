@@ -24,12 +24,14 @@ export function createStore({ dbPath, logger, config } = {}) {
     cfg,
     insertEvent,
     orderApi: order,
+    logger,
     notifyClaim: (payload) => {
       const body = claimPayload(payload);
       return notifyClaim(cfg, body, { logger, dbEntry: webhook.get(body.session.harness) });
     },
   });
-  const attempt = createAttemptApi({ db, insertEvent, orderApi: order });
+  claim.startup?.();
+  const attempt = createAttemptApi({ db, insertEvent, orderApi: order, clearExpiry: claim.clearExpiry });
   const checkpoint = createCheckpointApi({ db, insertEvent, attemptApi: attempt });
   const evidence = createEvidenceApi({ db, insertEvent, attemptApi: attempt });
   const verdict = createVerdictApi({ db, insertEvent, orderApi: order, evidenceApi: evidence });
@@ -48,6 +50,6 @@ export function createStore({ dbPath, logger, config } = {}) {
     webhook,
     event: eventApi,
     insertEvent,
-    close() { db.close(); },
+    close() { claim.closeTimers?.(); db.close(); },
   };
 }

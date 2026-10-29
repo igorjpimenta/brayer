@@ -1,6 +1,35 @@
 import { now } from "./util.js";
 
-export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim }) {
+export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim, logger }) {
+  const timers = new Map();
+  const MAX_TIMER_MS = 2147483647;
+
+  function clearExpiry(id) {
+    const timer = timers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timers.delete(id);
+    }
+  }
+
+  function scheduleExpiry(id, expiresAt) {
+    clearExpiry(id);
+    const delay = Number(expiresAt) - Date.now();
+    if (!Number.isFinite(delay) || delay <= 0) return;
+    const timer = delay > MAX_TIMER_MS
+      ? setTimeout(() => scheduleExpiry(id, expiresAt), MAX_TIMER_MS)
+      : setTimeout(() => {
+          timers.delete(id);
+          try {
+            claimApi.sweepExpired({ at: Date.now() + 5 });
+          } catch (err) {
+            logger?.warn?.(`brayer: lease sweep failed: ${err?.message ?? err}`);
+          }
+        }, delay + 25);
+    timer.unref?.();
+    timers.set(id, timer);
+  }
+
   const claimApi = {
     claimById({ id, agentId, sessionRef = null, leaseSeconds = cfg.leaseSeconds } = {}) {
       if (!id) throw new Error("order id is required");
@@ -28,6 +57,7 @@ export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim }) 
         });
         db.exec("COMMIT");
         const claimed = orderApi.get(id);
+        scheduleExpiry(id, claimed.claimExpiresAt ?? expires);
         notifyClaim?.({ order: claimed, agentId, sessionRef, at: t });
         return { claimed, reason: null };
       } catch (err) {
@@ -61,7 +91,10 @@ export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim }) 
            SET claim_expires_at=?, lease_seconds=?, last_heartbeat=?, updated_at=?
          WHERE id=? AND status='claimed' AND assignee=?
       `).run(expires, leaseSeconds, t, t, id, agentId);
-      return r.changes ? orderApi.get(id) : null;
+      if (!r.changes) return null;
+      const order = orderApi.get(id);
+      scheduleExpiry(id, order.claimExpiresAt);
+      return order;
     },
 
     release({ id, agentId, actor = "system", reason = "released" } = {}) {
@@ -81,6 +114,7 @@ export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim }) 
           actor, note: reason, at: t,
         });
         db.exec("COMMIT");
+        clearExpiry(id);
         return orderApi.get(id);
       } catch (err) {
         db.exec("ROLLBACK");
@@ -96,6 +130,7 @@ export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim }) 
       let released = 0;
       let blocked = 0;
       for (const row of expired) {
+        clearExpiry(row.id);
         db.exec("BEGIN IMMEDIATE");
         try {
           const cur = db.prepare("SELECT status, attempt_count FROM work_orders WHERE id=?").get(row.id);
@@ -133,6 +168,21 @@ export function createClaimApi({ db, cfg, insertEvent, orderApi, notifyClaim }) 
       }
       return { released, blocked };
     },
+  };
+
+  claimApi.startup = () => {
+    claimApi.sweepExpired({ at: now() });
+    const rows = db.prepare(`
+      SELECT id, claim_expires_at FROM work_orders
+       WHERE status='claimed' AND claim_expires_at IS NOT NULL
+    `).all();
+    for (const row of rows) scheduleExpiry(row.id, row.claim_expires_at);
+  };
+
+  claimApi.clearExpiry = clearExpiry;
+  claimApi.closeTimers = () => {
+    for (const timer of timers.values()) clearTimeout(timer);
+    timers.clear();
   };
 
   return claimApi;
