@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { claimError, claimMessage, createWakeServer } from "../../../../../plugins/wake/brayer/index.js";
+import { claimError, claimMessage, createWakeServer } from "../../../../../plugins/opencode/brayer/wake.js";
 
 const body = {
   event: "order.claimed",

@@ -229,8 +229,8 @@ Brayer MCP tool calls. It needs the Brayer MCP server configured and
 Automatic checkpoint/resume is not part of this release; the agent uses the
 Brayer MCP tools directly.
 
-**Wake bridge** — OpenCode has no plugin HTTP route, so `@igorjpimenta/brayer-wake`
-receives the claim webhook and prompts the claiming session through the
+**Wake bridge** — the OpenCode package also ships the optional `brayer-wake` bin.
+It receives the claim webhook and prompts the claiming session through the
 OpenCode SDK.
 
 ## Docker
@@ -245,9 +245,8 @@ HTTP MCP is exposed on 38293 and the event stream on 38294.
 ## Release
 
 Versions are CalVer (`YYYY.MM.DD-beta.N`). Tags are bare for core and prefixed
-for adapters: `brayer-openclaw-<calver>`, `brayer-opencode-<calver>`,
-`brayer-wake-<calver>`. Prereleases publish to `beta`; stable tags publish to
-`latest`.
+for adapters: `brayer-openclaw-<calver>` and `brayer-opencode-<calver>`.
+Prereleases publish to `beta`; stable tags publish to `latest`.
 
 ## Development
 
