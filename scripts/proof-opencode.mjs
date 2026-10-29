@@ -114,11 +114,14 @@ try {
     const checkpoint = check.checkpoint.latest({ workOrderId: order.id });
     const evidence = check.evidence.list({ workOrderId: order.id });
     const verdicts = check.verdict.list({ workOrderId: order.id });
+    const attempts = check.attempt.list({ workOrderId: order.id });
     const events = check.event.list({ workOrderId: order.id }).map((event) => event.kind);
     if (final.status !== "approved") throw new Error(`order is ${final.status}, expected approved`);
     if (checkpoint?.treeHash !== "proof-tree") throw new Error("checkpoint missing or wrong treeHash");
     if (evidence.length !== 1) throw new Error(`expected 1 evidence row, got ${evidence.length}`);
     if (verdicts.length !== 1 || verdicts[0].decision !== "approve") throw new Error("approve verdict missing");
+    if (attempts.length !== 1 || attempts[0].checkpointId !== checkpoint.id) throw new Error("attempt checkpoint link missing");
+    if (verdicts[0].attemptId !== attempts[0].id) throw new Error("verdict attempt link missing");
     const expected = ["order.created", "order.claimed", "attempt.started", "checkpoint.written", "evidence.attached", "attempt.finished", "verdict.issued"];
     if (JSON.stringify(events) !== JSON.stringify(expected)) throw new Error(`event order mismatch: ${JSON.stringify(events)}`);
     console.log(JSON.stringify({ ok: true, orderId: order.id, status: final.status, checkpoint: checkpoint.id, evidence: evidence[0].id, verdict: verdicts[0].id, events }, null, 2));
