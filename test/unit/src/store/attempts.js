@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { withStore } from "../../../helpers/store.js";
-import { claimedOrder } from "../../../helpers/fixtures.js";
+import { claimedOrder, runningAttempt } from "../../../helpers/fixtures.js";
 
 test("starts and finishes an attempt", () => withStore((store) => {
   const order = claimedOrder(store);
@@ -57,4 +57,16 @@ test("lists attempts for an order", () => withStore((store) => {
   const all = store.attempt.list({ workOrderId: order.id });
   assert.equal(all.length, 1);
   assert.equal(all[0].id, started.attempt.id);
+}));
+
+test("finish preserves an existing checkpoint link when checkpointId is omitted", () => withStore((store) => {
+  const { order, attempt } = runningAttempt(store);
+  const checkpoint = store.checkpoint.write({
+    workOrderId: order.id,
+    attemptId: attempt.id,
+    state: { next_step: "review" },
+    treeHash: "tree-1",
+  });
+  const finished = store.attempt.finish({ attemptId: attempt.id, status: "finished" });
+  assert.equal(finished.attempt.checkpointId, checkpoint.id);
 }));
