@@ -7,7 +7,6 @@ on:
       - "[0-9]*"
       - "brayer-openclaw-[0-9]*"
       - "brayer-opencode-[0-9]*"
-      - "brayer-wake-[0-9]*"
 
 permissions:
   contents: write
@@ -15,7 +14,7 @@ permissions:
 
 jobs:
   core:
-    if: startsWith(github.ref_name, 'brayer-openclaw-') == false && startsWith(github.ref_name, 'brayer-opencode-') == false && startsWith(github.ref_name, 'brayer-wake-') == false
+    if: startsWith(github.ref_name, 'brayer-openclaw-') == false && startsWith(github.ref_name, 'brayer-opencode-') == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -157,50 +156,3 @@ jobs:
         run: npm dist-tag add @igorjpimenta/brayer-opencode@$(node -p "require('./package.json').version") latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  wake:
-    if: startsWith(github.ref_name, 'brayer-wake-')
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: plugins/wake/brayer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
-      - name: Resolve channel
-        id: channel
-        run: |
-          TAG="${GITHUB_REF_NAME#brayer-wake-}"
-          if ! printf '%s' "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
-            echo "::error::tag $GITHUB_REF_NAME is not brayer-wake-<CalVer>"
-            exit 1
-          fi
-          PKG="$(node -p "require('./package.json').version")"
-          if [ "$TAG" != "$PKG" ]; then
-            echo "::error::tag $GITHUB_REF_NAME != plugin package.json $PKG"
-            exit 1
-          fi
-          TAG_DATE="$(printf '%s' "${TAG%%-*}" | tr . -)"
-          UTC_DATE="$(date -u +%Y-%m-%d)"
-          if [ "$TAG_DATE" != "$UTC_DATE" ]; then
-            echo "::error::tag date $TAG_DATE != UTC date $UTC_DATE"
-            exit 1
-          fi
-          case "$TAG" in
-            *-* ) echo "tag=beta" >> "$GITHUB_OUTPUT" ;;
-            * )   echo "tag=latest" >> "$GITHUB_OUTPUT" ;;
-          esac
-      - run: npm publish --tag ${{ steps.channel.outputs.tag }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Create GitHub release
-        run: |
-          TAG="$GITHUB_REF_NAME"
-          PKG_NAME="$(node -p "require('./package.json').name")"
-          PKG_VERSION="$(node -p "require('./package.json').version")"
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag               --title "$TAG"               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
