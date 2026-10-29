@@ -86,6 +86,7 @@ const server = spawn(process.execPath, [bin, "serve", "--mcp", "http", "--port",
     BRAYER_HARNESS: "opencode",
     BRAYER_MCP_BEARER: bearer,
     BRAYER_DB: dbPath,
+    BRAYER_BLOBS: path.join(dir, "blobs"),
   },
   stdio: "ignore",
 });
