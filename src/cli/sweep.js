@@ -1,4 +1,4 @@
-import { createStore } from "./store.js";
+import { createStore } from "../store.js";
 
 export function parseSweepArgs(args) {
   const out = {};

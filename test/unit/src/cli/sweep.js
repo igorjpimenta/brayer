@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { runSweep } from "../../../src/sweep.js";
-import { createStore } from "../../../src/store.js";
-import { readyOrder } from "../../helpers/fixtures.js";
+import { runSweep } from "../../../../src/cli/sweep.js";
+import { createStore } from "../../../../src/store.js";
+import { readyOrder } from "../../../helpers/fixtures.js";
 
 test("sweeps expired leases", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "brayer-sweep-"));

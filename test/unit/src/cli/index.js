@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatStatus } from "../../../src/cli.js";
+import { formatStatus } from "../../../../src/cli/index.js";
 
 test("formats an empty queue", () => {
   assert.equal(formatStatus([]), "No work orders.");
