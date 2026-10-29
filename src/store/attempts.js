@@ -2,7 +2,7 @@ import { newAttemptId } from "../ids.js";
 import { now } from "./util.js";
 import { rowAttempt } from "./rows.js";
 
-export function createAttemptApi({ db, insertEvent, orderApi }) {
+export function createAttemptApi({ db, insertEvent, orderApi, clearExpiry }) {
   const attemptApi = {
     get(id) {
       return rowAttempt(db.prepare("SELECT * FROM attempts WHERE id=?").get(id));
@@ -92,6 +92,7 @@ export function createAttemptApi({ db, insertEvent, orderApi }) {
           actor: attempt.agent, note: summary ?? error ?? status, sessionRef: attempt.sessionRef, at: t,
         });
         db.exec("COMMIT");
+        clearExpiry?.(attempt.workOrderId);
         return { attempt: attemptApi.get(attemptId), order: orderApi.get(attempt.workOrderId), reason: null };
       } catch (err) {
         db.exec("ROLLBACK");

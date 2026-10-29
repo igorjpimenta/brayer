@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { createStore } from "../../../../src/store.js";
 import { withStore, withTempDir } from "../../../helpers/store.js";
 import { readyOrder } from "../../../helpers/fixtures.js";
@@ -80,3 +82,57 @@ test("two stores race and only one claim wins", () => withTempDir((dir) => {
     b.close();
   }
 }));
+
+test("automatically sweeps an expired lease", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "brayer-auto-sweep-"));
+  const dbPath = path.join(dir, "store.sqlite");
+  const store = createStore({ dbPath });
+  try {
+    const order = readyOrder(store);
+    store.claim.claimById({ id: order.id, agentId: "claude:worker:s1", leaseSeconds: 0.2 });
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    assert.equal(store.order.get(order.id).status, "ready");
+    assert.ok(store.event.list({ workOrderId: order.id }).some((event) => event.kind === "order.released"));
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("heartbeat reschedules the automatic sweep", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "brayer-auto-sweep-"));
+  const dbPath = path.join(dir, "store.sqlite");
+  const store = createStore({ dbPath });
+  try {
+    const order = readyOrder(store);
+    store.claim.claimById({ id: order.id, agentId: "claude:worker:s1", leaseSeconds: 0.2 });
+    const heartbeat = store.claim.heartbeat({ id: order.id, agentId: "claude:worker:s1", leaseSeconds: 1 });
+    assert.ok(heartbeat);
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    assert.equal(store.order.get(order.id).status, "claimed");
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    assert.equal(store.order.get(order.id).status, "ready");
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("finishing an attempt cancels the automatic sweep", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "brayer-auto-sweep-"));
+  const dbPath = path.join(dir, "store.sqlite");
+  const store = createStore({ dbPath });
+  try {
+    const order = readyOrder(store);
+    const claimed = store.claim.claimById({ id: order.id, agentId: "claude:worker:s1", leaseSeconds: 0.2 }).claimed;
+    const started = store.attempt.start({ workOrderId: order.id, harness: "claude", agent: "claude:worker:s1" });
+    store.attempt.finish({ attemptId: started.attempt.id, status: "failed" });
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    assert.equal(store.order.get(order.id).status, "ready");
+    assert.equal(store.order.get(order.id).attemptCount, 1);
+    assert.ok(!store.event.list({ workOrderId: order.id }).some((event) => event.kind === "order.blocked"));
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
