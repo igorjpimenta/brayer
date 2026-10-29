@@ -70,12 +70,13 @@ export function createAttemptApi({ db, insertEvent, orderApi }) {
         if (!attempt) { db.exec("ROLLBACK"); return { attempt: null, order: null, reason: "not_found" }; }
         if (attempt.status !== "running") { db.exec("ROLLBACK"); return { attempt, order: orderApi.get(attempt.workOrderId), reason: "not_running" }; }
 
+        const nextCheckpointId = checkpointId ?? attempt.checkpointId;
         db.prepare(`
           UPDATE attempts
              SET status=?, ended_at=?, tokens_in=?, tokens_out=?, cache_read=?, cost_usd=?,
                  tool_calls=?, error=?, checkpoint_id=?
            WHERE id=? AND status='running'
-        `).run(status, t, tokensIn, tokensOut, cacheRead, costUsd, toolCalls, error, checkpointId, attemptId);
+        `).run(status, t, tokensIn, tokensOut, cacheRead, costUsd, toolCalls, error, nextCheckpointId, attemptId);
 
         const order = orderApi.get(attempt.workOrderId);
         const nextStatus = status === "finished" ? "review" : "ready";

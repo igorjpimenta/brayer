@@ -33,6 +33,9 @@ export function createVerdictApi({ db, insertEvent, orderApi, evidenceApi }) {
         if (decision === "approve" && evidenceApi.list({ workOrderId }).length === 0) {
           throw new Error("approve requires at least one evidence row");
         }
+        const resolvedAttemptId = attemptId ?? db.prepare(
+          "SELECT id FROM attempts WHERE work_order_id=? ORDER BY started_at DESC LIMIT 1"
+        ).get(workOrderId)?.id ?? null;
 
         const nextStatus = decision === "approve" ? "approved"
           : decision === "reject" ? "rejected"
@@ -42,10 +45,10 @@ export function createVerdictApi({ db, insertEvent, orderApi, evidenceApi }) {
         db.prepare(`
           INSERT INTO verdicts(id, work_order_id, attempt_id, decision, reason, actor, policy, evidence_ids, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(id, workOrderId, attemptId, decision, reason, actor, policy, jsonOut(evidenceIds), t);
+        `).run(id, workOrderId, resolvedAttemptId, decision, reason, actor, policy, jsonOut(evidenceIds), t);
         db.prepare("UPDATE work_orders SET status=?, updated_at=? WHERE id=?").run(nextStatus, t, workOrderId);
         insertEvent({
-          workOrderId, attemptId, fromStatus: order.status, toStatus: nextStatus, kind: "verdict.issued",
+          workOrderId, attemptId: resolvedAttemptId, fromStatus: order.status, toStatus: nextStatus, kind: "verdict.issued",
           actor, note: reason ?? decision, at: t,
         });
         db.exec("COMMIT");

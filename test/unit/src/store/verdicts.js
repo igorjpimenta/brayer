@@ -24,3 +24,9 @@ test("refuses a verdict outside review or blocked", () => withStore((store) => {
   const order = store.order.create({ title: "t", goal: "g", acceptance: "a", status: "ready" });
   assert.throws(() => store.verdict.issue({ workOrderId: order.id, decision: "approve" }), /requires review or blocked/);
 }));
+
+test("links a verdict to the latest attempt when attemptId is omitted", () => withStore((store) => {
+  const { order, attempt } = reviewOrder(store);
+  const res = store.verdict.issue({ workOrderId: order.id, decision: "reject", reason: "wrong fix" });
+  assert.equal(res.verdict.attemptId, attempt.id);
+}));
