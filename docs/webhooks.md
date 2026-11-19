@@ -14,7 +14,7 @@ Register from the CLI:
 
 ```sh
 brayer webhook set --harness opencode \
-  --url http://127.0.0.1:38295/claimed --bearer secret
+  --url http://127.0.0.1:38296/api/brayer/claimed --bearer secret
 brayer webhook test --harness opencode
 ```
 
@@ -28,7 +28,7 @@ deleted after run). OpenCode, a stateless CLI, cannot accept webhooks directly
 ## Wake bridge (`brayer-wake`)
 
 The OpenCode package ships an optional `brayer-wake` bin. It runs a small HTTP
-server (default port `38295`) that receives the claim webhook and prompts the
+server (default port `38296`) that receives the claim webhook and prompts the
 claiming OpenCode session through the OpenCode SDK.
 
 ```sh
@@ -46,5 +46,6 @@ Contract:
   and report through the Brayer tools.
 
 Envs: `BRAYER_WAKE_BEARER` (required), `BRAYER_OPENCODE_URL` (default
-`http://127.0.0.1:4096`), listen port via `createWakeServer({ port })`
-(default `38295`). See [configuration](configuration.md#wake-bridge-igorjpimentabrayer-opencode).
+`http://127.0.0.1:4096`), and `BRAYER_WAKE_PORT` (default `38296`;
+`brayer-wake --port N` overrides). Keep it off the MCP daemon's port. See
+[configuration](configuration.md#wake-bridge-igorjpimentabrayer-opencode).

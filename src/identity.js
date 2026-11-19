@@ -38,13 +38,14 @@ export function resolveIdentity({ meta, args, base } = {}) {
         ? { agent: aAgent, session: aSession, via: "args" }
         : null;
   if (!pair) {
+    const hint = "Install @igorjpimenta/brayer-opencode (or the matching harness plugin) so identity is stamped automatically, or pass both brayer_agent and brayer_session.";
     if ((mAgent || aAgent) && (mSession || aSession)) {
-      throw new Error("brayer: refused caller identity (halves in different channels — pairs never splice). Stamp a whole agent+session pair in one channel: _meta.brayer or brayer_agent/brayer_session args.");
+      throw new Error(`brayer: refused caller identity (halves in different channels — pairs never splice). ${hint}`);
     }
     const bad = [];
     if (!mAgent && !aAgent) bad.push("agent");
     if (!mSession && !aSession) bad.push("session");
-    throw new Error(`brayer: ${bad.join(" and ")} must be stamped on the call`);
+    throw new Error(`brayer: ${bad.join(" and ")} must be stamped on the call. ${hint}`);
   }
 
   return { harness: declared.harness, agent: pair.agent, session: pair.session, via: pair.via };

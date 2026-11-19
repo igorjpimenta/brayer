@@ -99,12 +99,14 @@ export function createWakeServer(options = {}) {
 }
 
 export async function startWakeServer({
-  port = 38295,
+  port,
   bearer = process.env.BRAYER_WAKE_BEARER,
   baseUrl = process.env.BRAYER_OPENCODE_URL ?? "http://127.0.0.1:4096",
   logger = console,
 } = {}) {
   if (!bearer) throw new Error("brayer wake: BRAYER_WAKE_BEARER is required");
+  const resolvedPort = port ?? (process.env.BRAYER_WAKE_PORT ? Number(process.env.BRAYER_WAKE_PORT) : 38296);
+  if (!Number.isInteger(resolvedPort) || resolvedPort < 0) throw new Error("brayer wake: port must be a non-negative integer");
   const { createOpencodeClient } = await import("@opencode-ai/sdk");
   const client = createOpencodeClient({ baseUrl });
   const server = createWakeServer({
@@ -118,8 +120,8 @@ export async function startWakeServer({
   });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(port, "127.0.0.1", resolve);
+    server.listen(resolvedPort, "127.0.0.1", resolve);
   });
-  logger?.info?.(`brayer wake: listening on http://127.0.0.1:${port}/api/brayer/claimed`);
+  logger?.info?.(`brayer wake: listening on http://127.0.0.1:${resolvedPort}/api/brayer/claimed`);
   return server;
 }

@@ -1,4 +1,4 @@
-import { stampBrayerIdentity } from "./identity.js";
+import { stampBrayerIdentity, stampStartAttempt } from "./identity.js";
 
 export function createBrayerHooks() {
   const agents = new Map();
@@ -12,6 +12,7 @@ export function createBrayerHooks() {
     },
     "tool.execute.before": async (input, output) => {
       stampBrayerIdentity(input, output, { agent: agents.get(input?.sessionID) ?? process.env.BRAYER_AGENT });
+      stampStartAttempt(input, output);
     },
   };
 }

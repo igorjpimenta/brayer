@@ -21,6 +21,8 @@ Resolved in [`src/config.js`](../src/config.js).
 | Claim webhook bearer | `BRAYER_CLAIM_WEBHOOK_BEARER` | unset |
 | Claim webhook timeout | `BRAYER_CLAIM_WEBHOOK_TIMEOUT_MS` | `3000` |
 | Per-harness webhook map | `BRAYER_CLAIM_WEBHOOKS` | `{}` |
+| Require a checkpoint before finish | `BRAYER_REQUIRE_CHECKPOINT` | `false` |
+| Require usage before finish | `BRAYER_REQUIRE_USAGE` | `false` |
 
 The claim webhook entries double as the claim gate: a harness without any of
 these routes (DB row, per-harness entry, or global URL) cannot claim orders,
@@ -52,10 +54,14 @@ Flags on `brayer serve` override ports per launch: `--mcp http --port N`,
 
 Read by the wake bridge inside the OpenCode plugin process
 ([`plugins/opencode/brayer/wake.js`](../plugins/opencode/brayer/wake.js)), not
-by the core daemon. The listen port is a constructor default, not an env.
+by the core daemon.
 
 | Env | Default | Notes |
 | --- | --- | --- |
 | `BRAYER_WAKE_BEARER` | required | bearer checked on every wake request |
 | `BRAYER_OPENCODE_URL` | `http://127.0.0.1:4096` | OpenCode SDK base URL |
-| listen port | `38295` | constructor argument (`createWakeServer({ port })`) |
+| `BRAYER_WAKE_PORT` | `38296` | listen port; `brayer-wake --port N` overrides |
+
+The wake bridge must not share the MCP server's port. On a single-host setup
+the MCP daemon often occupies `38293` or `38295`; `38296` keeps the bridge
+separate.

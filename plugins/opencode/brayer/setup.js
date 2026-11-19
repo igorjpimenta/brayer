@@ -5,7 +5,7 @@
 // unchanged from the V1 side: the same overwrite-unconditionally rule applies,
 // because a model-supplied pair must never survive on either host.
 
-import { stampBrayerIdentity } from "./identity.js";
+import { stampBrayerIdentity, stampStartAttempt } from "./identity.js";
 
 export async function setup(ctx) {
   // sessionID → agent, learned once per request. The context hook is the only
@@ -22,11 +22,14 @@ export async function setup(ctx) {
     if (!event || typeof event !== "object") return;
     const agent = agents.get(String(event.sessionID)) ?? process.env.BRAYER_AGENT ?? null;
     event.input = event.input && typeof event.input === "object" ? event.input : {};
+    const stamped = { args: event.input };
     stampBrayerIdentity(
       { tool: event.tool, sessionID: event.sessionID },
-      { args: event.input },
+      stamped,
       { agent },
     );
+    stampStartAttempt({ tool: event.tool }, stamped);
+    event.input = stamped.args;
   });
 
   return () => {};

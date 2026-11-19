@@ -15,3 +15,14 @@ export function stampBrayerIdentity(input, output, { agent = null } = {}) {
   if (input?.sessionID) output.args.brayer_session = input.sessionID;
   return true;
 }
+
+// The claim lease only guards the claimed→attempt window. Opening the attempt
+// in the same call collapses that window, so a working session cannot drift
+// into a 30-minute lease expiry while it is still doing the work.
+export function stampStartAttempt(input, output) {
+  if (!isBrayerTool(input?.tool)) return false;
+  if (!/order_(claim|next)$/.test(String(input.tool))) return false;
+  output.args = output.args ?? {};
+  output.args.start_attempt = true;
+  return true;
+}

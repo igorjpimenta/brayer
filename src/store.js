@@ -10,6 +10,7 @@ import { createCheckpointApi } from "./store/checkpoints.js";
 import { createEvidenceApi } from "./store/evidence.js";
 import { createVerdictApi } from "./store/verdicts.js";
 import { createResumeApi } from "./store/resume.js";
+import { createAdoptionApi } from "./store/adoption.js";
 
 export function createStore({ dbPath, logger, config } = {}) {
   const cfg = resolveConfig({ explicit: config ?? {} });
@@ -39,11 +40,12 @@ export function createStore({ dbPath, logger, config } = {}) {
     },
   });
   claim.startup?.();
-  const attempt = createAttemptApi({ db, insertEvent, orderApi: order, clearExpiry: claim.clearExpiry });
+  const attempt = createAttemptApi({ db, cfg, insertEvent, orderApi: order, clearExpiry: claim.clearExpiry });
   const checkpoint = createCheckpointApi({ db, insertEvent, attemptApi: attempt });
   const evidence = createEvidenceApi({ db, insertEvent, attemptApi: attempt });
   const verdict = createVerdictApi({ db, insertEvent, orderApi: order, evidenceApi: evidence });
   const resume = createResumeApi({ db, insertEvent, orderApi: order, checkpointApi: checkpoint });
+  const adoption = createAdoptionApi({ db });
 
   return {
     db,
@@ -55,6 +57,7 @@ export function createStore({ dbPath, logger, config } = {}) {
     evidence,
     verdict,
     resume,
+    adoption,
     webhook,
     event: eventApi,
     insertEvent,

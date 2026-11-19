@@ -57,6 +57,38 @@ export function createOrderApi({ db, insertEvent }) {
       return rowOrder(db.prepare("SELECT * FROM work_orders WHERE id=?").get(id));
     },
 
+    cancel({ id, actor = "operator", reason = "cancelled" } = {}) {
+      if (!id) throw new Error("order id is required");
+      const t = now();
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        const cur = rowOrder(db.prepare("SELECT * FROM work_orders WHERE id=?").get(id));
+        if (!cur) throw new Error(`order not found: ${id}`);
+        if (cur.status === "cancelled") { db.exec("ROLLBACK"); return { order: cur, changed: false }; }
+        if (cur.status === "running") {
+          throw new Error("cannot cancel a running attempt — finish or fail the attempt first");
+        }
+        if (["approved", "rejected", "done"].includes(cur.status)) {
+          throw new Error(`cannot cancel a ${cur.status} order`);
+        }
+        db.prepare(`
+          UPDATE work_orders
+             SET status='cancelled', assignee=NULL, claim_expires_at=NULL, lease_seconds=NULL,
+                 last_heartbeat=NULL, closed_at=?, updated_at=?
+           WHERE id=?
+        `).run(t, t, id);
+        insertEvent({
+          workOrderId: id, fromStatus: cur.status, toStatus: "cancelled", kind: "order.cancelled",
+          actor, note: reason, at: t,
+        });
+        db.exec("COMMIT");
+        return { order: orderApi.get(id), changed: true };
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+    },
+
     list({ status, limit = 100 } = {}) {
       const sql = status
         ? "SELECT * FROM work_orders WHERE status=? ORDER BY priority DESC, created_at ASC LIMIT ?"

@@ -12,6 +12,8 @@ const DEFAULTS = {
   claimWebhookBearer: "",
   claimWebhookTimeoutMs: 3000,
   claimWebhooks: {},
+  requireCheckpoint: false,
+  requireUsage: false,
 };
 
 const ENV_KEYS = {
@@ -24,14 +26,25 @@ const ENV_KEYS = {
   claimWebhookUrl: "BRAYER_CLAIM_WEBHOOK_URL",
   claimWebhookBearer: "BRAYER_CLAIM_WEBHOOK_BEARER",
   claimWebhookTimeoutMs: "BRAYER_CLAIM_WEBHOOK_TIMEOUT_MS",
+  requireCheckpoint: "BRAYER_REQUIRE_CHECKPOINT",
+  requireUsage: "BRAYER_REQUIRE_USAGE",
 };
 
 const INT_KEYS = new Set(["leaseSeconds", "maxAttempts", "httpPort", "wsPort", "claimWebhookTimeoutMs"]);
+const BOOL_KEYS = new Set(["requireCheckpoint", "requireUsage"]);
 
 function parseInteger(key, value) {
   const n = Number(value);
   if (!Number.isInteger(n) || n < 0) throw new Error(`brayer: ${key} must be a non-negative integer`);
   return n;
+}
+
+function parseBoolean(key, value) {
+  if (typeof value === "boolean") return value;
+  const raw = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(raw)) return true;
+  if (["0", "false", "no", "off", ""].includes(raw)) return false;
+  throw new Error(`brayer: ${key} must be a boolean`);
 }
 
 export function resolveConfig({ explicit = {}, env = process.env } = {}) {
@@ -57,6 +70,7 @@ export function resolveConfig({ explicit = {}, env = process.env } = {}) {
   }
 
   for (const key of INT_KEYS) out[key] = parseInteger(key, out[key]);
+  for (const key of BOOL_KEYS) out[key] = parseBoolean(key, out[key]);
   return out;
 }
 

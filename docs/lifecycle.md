@@ -30,6 +30,12 @@ An agent claims a ready order (`claim_next` or `claim` by id — atomic, the rac
 loser gets nothing), then keeps the lease alive with heartbeats. An expired
 lease returns the order to the queue, or blocks at the attempt cap.
 
+`claim` and `claim_next` accept `start_attempt: true`, which opens the running
+attempt in the same call. The OpenCode adapter always sets it: the lease only
+guards the claimed → attempt window, so collapsing that window removes the
+common 30-minute expiry. An attempt in `running` state is not swept on lease
+expiry; heartbeat remains for manually claimed orders that have not started.
+
 ```mermaid
 flowchart LR
   Q[Ready order] -->|claimNext / claimById| L{Lease won?}
@@ -43,6 +49,12 @@ flowchart LR
 
 Defaults: lease `1800` s, attempt cap `3` (see
 [configuration](configuration.md)).
+
+An order that never started running can be retired with
+`brayer_order_cancel` (or `brayer order cancel --id`): it clears the claim,
+sets `closed_at`, and records `order.cancelled`. Running orders are refused —
+finish or fail the attempt first; approved, rejected and done orders are
+terminal.
 
 ## Checkpoint and evidence
 
@@ -81,6 +93,15 @@ flowchart LR
 
 Approve requires at least one evidence row on the attempt
 (`brayer_verdict_issue` refuses otherwise).
+
+## Adoption scorecard
+
+`brayer adoption --days N --harness H` reports real orders claimed per week,
+claim → attempt within five minutes, attempts with a verdict, lease expiries,
+usage reporting and median claim → attempt latency. An order counts as **real**
+only when `workspace` is set: proof and gate orders omit it, so scaffolding
+does not inflate demand. A clean queue is not a success signal — claims without
+attempts are the failure this measures.
 
 ## Identity refusal contract
 

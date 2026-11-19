@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createBrayerHooks } from "../../../../../plugins/opencode/brayer/hooks.js";
-import { isBrayerTool, stampBrayerIdentity } from "../../../../../plugins/opencode/brayer/identity.js";
+import { isBrayerTool, stampBrayerIdentity, stampStartAttempt } from "../../../../../plugins/opencode/brayer/identity.js";
 
 test("matches brayer tools", () => {
   assert.equal(isBrayerTool("brayer_order_get"), true);
@@ -66,4 +66,39 @@ test("setup learns the agent from the session context hook and stamps the tool i
     brayer_session: "ses_2",
   });
   assert.equal(typeof cleanup, "function");
+});
+
+test("claim and next force start_attempt", () => {
+  for (const tool of ["brayer_brayer_order_claim", "brayer_order_next"]) {
+    const output = { args: { start_attempt: false } };
+    assert.equal(stampStartAttempt({ tool }, output), true);
+    assert.equal(output.args.start_attempt, true);
+  }
+  const read = { args: {} };
+  assert.equal(stampStartAttempt({ tool: "brayer_order_get" }, read), false);
+  assert.deepEqual(read.args, {});
+});
+
+test("the V1 hook opens the attempt in the same call as the claim", async () => {
+  const hooks = createBrayerHooks();
+  await hooks["chat.params"]({ sessionID: "ses_1", agent: "build" });
+  const output = { args: { start_attempt: false } };
+  await hooks["tool.execute.before"]({ tool: "brayer_brayer_order_claim", sessionID: "ses_1" }, output);
+  assert.equal(output.args.start_attempt, true);
+  assert.equal(output.args.brayer_agent, "build");
+  assert.equal(output.args.brayer_session, "ses_1");
+});
+
+test("setup opens the attempt in the same call as the claim", async () => {
+  const { setup } = await import("../../../../../plugins/opencode/brayer/setup.js");
+  const hooks = {};
+  const ctx = {
+    session: { hook: async (name, callback) => { hooks[name] = callback; return { dispose() {} }; } },
+    tool: { hook: async (name, callback) => { hooks[name] = callback; return { dispose() {} }; } },
+  };
+  await setup(ctx);
+  hooks.context({ sessionID: "ses_3", agent: "build" });
+  const event = { tool: "brayer_brayer_order_claim", sessionID: "ses_3", input: { start_attempt: false } };
+  hooks["execute.before"](event);
+  assert.equal(event.input.start_attempt, true);
 });

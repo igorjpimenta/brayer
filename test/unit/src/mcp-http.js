@@ -36,7 +36,7 @@ const store = createStore({ dbPath: path.join(dir, "store.sqlite"), config: { cl
     await client.connect(transport);
     try {
       const { tools } = await client.listTools();
-      assert.equal(tools.length, 16);
+      assert.equal(tools.length, 17);
     } finally {
       await client.close();
     }
