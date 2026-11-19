@@ -1,7 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withStore } from "../../../helpers/store.js";
+import path from "node:path";
+import { createStore } from "../../../../src/store.js";
+import { withStore, withTempDir } from "../../../helpers/store.js";
 import { claimedOrder, runningAttempt } from "../../../helpers/fixtures.js";
+
+function configuredStore(dir, config) {
+  return createStore({
+    dbPath: path.join(dir, "store.sqlite"),
+    config: { claimWebhookUrl: "http://127.0.0.1:9/claimed", ...config },
+  });
+}
 
 test("starts and finishes an attempt", () => withStore((store) => {
   const order = claimedOrder(store);
@@ -127,4 +136,35 @@ test("refuses invalid or finished usage reports", () => withStore((store) => {
   assert.throws(() => store.attempt.reportUsage({}), /attemptId is required/);
   store.attempt.finish({ attemptId: attempt.id, status: "failed" });
   assert.equal(store.attempt.reportUsage({ attemptId: attempt.id, toolCalls: 1 }).reason, "not_running");
+}));
+
+test("requires a checkpoint before finishing when configured", () => withTempDir((dir) => {
+  const store = configuredStore(dir, { requireCheckpoint: true });
+  try {
+    const { order, attempt } = runningAttempt(store);
+    assert.throws(() => store.attempt.finish({ attemptId: attempt.id, status: "finished" }), /checkpoint is required/);
+    const checkpoint = store.checkpoint.write({
+      workOrderId: order.id,
+      attemptId: attempt.id,
+      state: { next_step: "review" },
+      treeHash: "tree-1",
+    });
+    const finished = store.attempt.finish({ attemptId: attempt.id, status: "finished", checkpointId: checkpoint.id });
+    assert.equal(finished.attempt.status, "finished");
+  } finally {
+    store.close();
+  }
+}));
+
+test("requires usage before finishing when configured", () => withTempDir((dir) => {
+  const store = configuredStore(dir, { requireUsage: true });
+  try {
+    const { attempt } = runningAttempt(store);
+    assert.throws(() => store.attempt.finish({ attemptId: attempt.id, status: "finished" }), /usage must be reported/);
+    store.attempt.reportUsage({ attemptId: attempt.id, tokensIn: 10 });
+    const finished = store.attempt.finish({ attemptId: attempt.id, status: "finished" });
+    assert.equal(finished.attempt.status, "finished");
+  } finally {
+    store.close();
+  }
 }));

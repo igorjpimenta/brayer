@@ -29,3 +29,11 @@ test("malformed integer refuses", () => {
 test("unknown explicit key refuses", () => {
   assert.throws(() => resolveConfig({ explicit: { leaseSecond: 1 } }), /unknown config key/);
 });
+
+test("boolean enforcement knobs parse and refuse junk", () => {
+  assert.equal(resolveConfig({ env: {} }).requireCheckpoint, false);
+  assert.equal(resolveConfig({ env: { BRAYER_REQUIRE_CHECKPOINT: "1" } }).requireCheckpoint, true);
+  assert.equal(resolveConfig({ env: { BRAYER_REQUIRE_USAGE: "true" } }).requireUsage, true);
+  assert.equal(resolveConfig({ env: { BRAYER_REQUIRE_USAGE: "0" } }).requireUsage, false);
+  assert.throws(() => resolveConfig({ env: { BRAYER_REQUIRE_CHECKPOINT: "maybe" } }), /must be a boolean/);
+});

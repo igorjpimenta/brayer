@@ -28,20 +28,24 @@ export const orderDefs = [
   {
     name: "brayer_order_next",
     description:
-      "Atomically claim the highest-priority ready order for this agent. A race loser gets an empty result, never a partial claim.",
+      "Atomically claim the highest-priority ready order for this agent. A race loser gets an empty result, never a partial claim. Set start_attempt to open the running attempt in the same call.",
     shape: {
       ...identityShape,
       leaseSeconds: z.optional(z.int()),
+      start_attempt: z.optional(z.boolean()),
+      model: z.optional(z.string()),
     },
   },
   {
     name: "brayer_order_claim",
     description:
-      "Atomically claim one ready order by id. The order must be ready and unassigned, or assigned to this agent.",
+      "Atomically claim one ready order by id. The order must be ready and unassigned, or assigned to this agent. Set start_attempt to open the running attempt in the same call.",
     shape: {
       ...identityShape,
       orderId: z.string(),
       leaseSeconds: z.optional(z.int()),
+      start_attempt: z.optional(z.boolean()),
+      model: z.optional(z.string()),
     },
   },
   {
@@ -73,7 +77,38 @@ export const orderDefs = [
       orderId: z.string(),
     },
   },
+  {
+    name: "brayer_order_cancel",
+    description:
+      "Cancel an order that never started running: clears its claim and records order.cancelled. Refuses running, approved, rejected and done orders.",
+    shape: {
+      ...identityShape,
+      orderId: z.string(),
+      reason: z.optional(z.string()),
+    },
+  },
 ];
+
+function startAttemptForClaim({ store, args, identity, claimed }) {
+  if (!args.start_attempt || !claimed) return null;
+  return store.attempt.start({
+    workOrderId: claimed.id,
+    harness: identity.harness,
+    agent: identityKey(identity),
+    sessionRef: identity.session,
+    model: args.model ?? null,
+  });
+}
+
+function withAttempt(result, started) {
+  if (!started) return result;
+  return {
+    ...result,
+    attempt: started.attempt,
+    order: started.order ?? result.claimed,
+    attemptReason: started.reason,
+  };
+}
 
 export const orderHandlers = {
   brayer_order_create({ store, args, identity }) {
@@ -98,20 +133,22 @@ export const orderHandlers = {
   },
 
   brayer_order_next({ store, args, identity }) {
-    return store.claim.claimNext({
+    const result = store.claim.claimNext({
       agentId: identityKey(identity),
       sessionRef: identity.session,
       leaseSeconds: args.leaseSeconds,
     });
+    return withAttempt(result, startAttemptForClaim({ store, args, identity, claimed: result.claimed }));
   },
 
   brayer_order_claim({ store, args, identity }) {
-    return store.claim.claimById({
+    const result = store.claim.claimById({
       id: args.orderId,
       agentId: identityKey(identity),
       sessionRef: identity.session,
       leaseSeconds: args.leaseSeconds,
     });
+    return withAttempt(result, startAttemptForClaim({ store, args, identity, claimed: result.claimed }));
   },
 
   brayer_order_heartbeat({ store, args, identity }) {
@@ -129,6 +166,14 @@ export const orderHandlers = {
       workOrderId: args.orderId,
       reason: args.reason ?? "resumed",
       actor: identityKey(identity),
+    });
+  },
+
+  brayer_order_cancel({ store, args, identity }) {
+    return store.order.cancel({
+      id: args.orderId,
+      actor: identityKey(identity),
+      reason: args.reason ?? "cancelled",
     });
   },
 

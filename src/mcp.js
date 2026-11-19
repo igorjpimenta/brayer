@@ -55,6 +55,11 @@ function safeEqual(a, b) {
   return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
+function isLoopback(req) {
+  const addr = req.socket?.remoteAddress ?? "";
+  return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1";
+}
+
 export async function startMcpHttpServer({
   store,
   base,
@@ -85,6 +90,40 @@ export async function startMcpHttpServer({
     await entry.transport.handleRequest(req, res, body);
   }
 
+  async function handleRegistration(req, res) {
+    if (req.method !== "POST") {
+      res.writeHead(405, { allow: "POST", "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method not allowed" }));
+      return;
+    }
+    if (!isLoopback(req)) {
+      res.writeHead(403, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "registration is loopback-only" }));
+      return;
+    }
+    let body;
+    try {
+      body = await readBody(req);
+    } catch {
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "invalid json body" }));
+      return;
+    }
+    try {
+      const target = store.webhook.upsert({
+        harness: body?.harness,
+        url: body?.url,
+        bearer: body?.bearer ?? null,
+        timeoutMs: body?.timeoutMs ?? null,
+      });
+      res.writeHead(201, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: true, harness: target.harness, url: target.url }));
+    } catch (err) {
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: String(err?.message ?? err) }));
+    }
+  }
+
   const server = http.createServer(async (req, res) => {
     if (req.url === "/health") {
       res.writeHead(200, { "content-type": "application/json" });
@@ -92,6 +131,10 @@ export async function startMcpHttpServer({
       return;
     }
     const pathname = new URL(req.url, "http://localhost").pathname;
+    if (pathname === "/api/brayer/webhooks") {
+      await handleRegistration(req, res);
+      return;
+    }
     if (pathname !== "/mcp") {
       res.writeHead(404, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: "not found" }));

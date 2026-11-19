@@ -60,3 +60,36 @@ test("persists orders across a reopen", () => withTempDir((dir) => {
     second.close();
   }
 }));
+
+test("cancels a ready order and records the event", () => withStore((store) => {
+  const order = store.order.create({ title: "t", goal: "g", acceptance: "a", status: "ready" });
+  const result = store.order.cancel({ id: order.id, actor: "operator", reason: "scaffolding" });
+  assert.equal(result.changed, true);
+  assert.equal(result.order.status, "cancelled");
+  assert.ok(result.order.closedAt);
+  const cancelled = store.event.list({ workOrderId: order.id }).at(-1);
+  assert.equal(cancelled.kind, "order.cancelled");
+  assert.equal(cancelled.note, "scaffolding");
+  assert.equal(store.order.cancel({ id: order.id }).changed, false);
+}));
+
+test("cancelling a claimed order clears the lease", () => withStore((store) => {
+  const order = store.order.create({ title: "t", goal: "g", acceptance: "a", status: "ready" });
+  store.claim.claimById({ id: order.id, agentId: "claude:worker:s1" });
+  const result = store.order.cancel({ id: order.id, actor: "operator" });
+  assert.equal(result.order.status, "cancelled");
+  assert.equal(result.order.assignee, null);
+  assert.equal(result.order.claimExpiresAt, null);
+}));
+
+test("refuses to cancel an unknown order with a clean error", () => withStore((store) => {
+  assert.throws(() => store.order.cancel({ id: "WO-missing" }), /order not found: WO-missing/);
+}));
+
+test("refuses to cancel a running order", () => withStore((store) => {
+  const order = store.order.create({ title: "t", goal: "g", acceptance: "a", status: "ready" });
+  store.claim.claimById({ id: order.id, agentId: "claude:worker:s1" });
+  store.attempt.start({ workOrderId: order.id, harness: "claude", agent: "claude:worker:s1" });
+  assert.throws(() => store.order.cancel({ id: order.id }), /running attempt/);
+  assert.equal(store.order.get(order.id).status, "running");
+}));

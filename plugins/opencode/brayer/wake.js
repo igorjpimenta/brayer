@@ -98,13 +98,52 @@ export function createWakeServer(options = {}) {
   return http.createServer(createWakeHandler(options));
 }
 
+export async function registerWakeTarget({
+  registerUrl,
+  harness = "opencode",
+  url,
+  bearer = null,
+  timeoutMs = 3000,
+  attempts = 5,
+  retryDelayMs = 500,
+  logger = null,
+} = {}) {
+  if (!registerUrl) return { ok: false, reason: "disabled" };
+  const endpoint = `${String(registerUrl).replace(/\/+$/, "")}/api/brayer/webhooks`;
+  const headers = { "content-type": "application/json" };
+  let last = { ok: false, reason: "error" };
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ harness, url, bearer }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (res.ok) return { ok: true, status: res.status };
+      last = { ok: false, reason: `http_${res.status}` };
+      if (res.status < 500) break;
+    } catch {
+      last = { ok: false, reason: "error" };
+    }
+    if (i + 1 < attempts) await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+  }
+  logger?.warn?.(`brayer wake: register ${endpoint} failed (${last.reason})`);
+  return last;
+}
+
 export async function startWakeServer({
-  port = 38295,
+  port,
   bearer = process.env.BRAYER_WAKE_BEARER,
   baseUrl = process.env.BRAYER_OPENCODE_URL ?? "http://127.0.0.1:4096",
+  harness = process.env.BRAYER_WAKE_HARNESS ?? "opencode",
+  registerUrl = process.env.BRAYER_REGISTER_URL
+    ?? `http://127.0.0.1:${process.env.BRAYER_HTTP_PORT ?? 38293}`,
   logger = console,
 } = {}) {
   if (!bearer) throw new Error("brayer wake: BRAYER_WAKE_BEARER is required");
+  const resolvedPort = port ?? (process.env.BRAYER_WAKE_PORT ? Number(process.env.BRAYER_WAKE_PORT) : 0);
+  if (!Number.isInteger(resolvedPort) || resolvedPort < 0) throw new Error("brayer wake: port must be a non-negative integer");
   const { createOpencodeClient } = await import("@opencode-ai/sdk");
   const client = createOpencodeClient({ baseUrl });
   const server = createWakeServer({
@@ -118,8 +157,25 @@ export async function startWakeServer({
   });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(port, "127.0.0.1", resolve);
+    server.listen(resolvedPort, "127.0.0.1", resolve);
   });
-  logger?.info?.(`brayer wake: listening on http://127.0.0.1:${port}/api/brayer/claimed`);
+  const actualPort = server.address()?.port ?? resolvedPort;
+  const wakeUrl = `http://127.0.0.1:${actualPort}/api/brayer/claimed`;
+  logger?.info?.(`brayer wake: listening on ${wakeUrl}`);
+  const registered = await registerWakeTarget({
+    registerUrl,
+    harness,
+    url: wakeUrl,
+    bearer,
+    logger,
+  });
+  if (registered.ok) {
+    logger?.info?.(`brayer wake: registered ${harness} at ${wakeUrl}`);
+  } else {
+    logger?.warn?.(
+      `brayer wake: not registered (${registered.reason}); register manually: ` +
+      `brayer webhook set --harness ${harness} --url ${wakeUrl} --bearer <bearer>`
+    );
+  }
   return server;
 }

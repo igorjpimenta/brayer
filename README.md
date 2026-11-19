@@ -51,8 +51,7 @@ configs are in [Harnesses](#harnesses). Inside the agent's session:
 ```
 brayer_order_create  { title: "refactor invoice parser", goal: "…",
                        acceptance: "tests pass", status: "ready" }
-brayer_order_claim   { orderId: "WO-…" }     # identity is stamped by the plugin
-brayer_attempt_start { orderId }             # lease held, heartbeats keep it
+brayer_order_claim   { orderId: "WO-…" }     # plugin stamps identity and opens the attempt
 … work …
 brayer_evidence_attach / brayer_checkpoint_write
 brayer_attempt_finish → review → brayer_verdict_issue
@@ -63,6 +62,9 @@ Verify from the operator side — no transcript reading:
 ```sh
 $ brayer status
 WO-lqcvx0si  refactor invoice parser   review   openclaw:main:agent:main:explicit:ses_x
+
+brayer doctor --harness opencode   # fails when the MCP entry or identity plugin is missing
+brayer adoption --days 30          # real orders → attempts → verdicts, lease expiries, usage
 ```
 
 All MCP tools and their contracts are defined in [`src/tools/`](src/tools/index.js) — or just list them from the running server.
@@ -178,8 +180,9 @@ Plugins also auto-discover from `.opencode/plugins/` directories (project or
 global config dir).
 
 Automatic checkpoint/resume is not part of the OpenCode adapter; the agent uses
-the Brayer MCP tools directly. The optional `brayer-wake` bin receives the claim
-webhook and prompts the claiming session through the OpenCode SDK — see
+the Brayer MCP tools directly. The optional `brayer-wake` bin binds an ephemeral
+loopback port, registers that URL with the daemon, receives the claim webhook,
+and prompts the claiming session through the OpenCode SDK — see
 [webhooks and wake](docs/webhooks.md).
 
 ## The order lifecycle

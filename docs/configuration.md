@@ -21,6 +21,8 @@ Resolved in [`src/config.js`](../src/config.js).
 | Claim webhook bearer | `BRAYER_CLAIM_WEBHOOK_BEARER` | unset |
 | Claim webhook timeout | `BRAYER_CLAIM_WEBHOOK_TIMEOUT_MS` | `3000` |
 | Per-harness webhook map | `BRAYER_CLAIM_WEBHOOKS` | `{}` |
+| Require a checkpoint before finish | `BRAYER_REQUIRE_CHECKPOINT` | `false` |
+| Require usage before finish | `BRAYER_REQUIRE_USAGE` | `false` |
 
 The claim webhook entries double as the claim gate: a harness without any of
 these routes (DB row, per-harness entry, or global URL) cannot claim orders,
@@ -52,10 +54,22 @@ Flags on `brayer serve` override ports per launch: `--mcp http --port N`,
 
 Read by the wake bridge inside the OpenCode plugin process
 ([`plugins/opencode/brayer/wake.js`](../plugins/opencode/brayer/wake.js)), not
-by the core daemon. The listen port is a constructor default, not an env.
+by the core daemon.
 
 | Env | Default | Notes |
 | --- | --- | --- |
 | `BRAYER_WAKE_BEARER` | required | bearer checked on every wake request |
 | `BRAYER_OPENCODE_URL` | `http://127.0.0.1:4096` | OpenCode SDK base URL |
-| listen port | `38295` | constructor argument (`createWakeServer({ port })`) |
+| `BRAYER_WAKE_PORT` | `0` | ephemeral listen port; `--port N` pins one |
+| `BRAYER_WAKE_HARNESS` | `opencode` | harness registered with the daemon |
+| `BRAYER_REGISTER_URL` | `http://127.0.0.1:${BRAYER_HTTP_PORT??38293}` | daemon base URL for self-registration |
+
+The bridge binds an ephemeral port, then POSTs the actual URL to the daemon at
+`/api/brayer/webhooks`; the daemon upserts it as the harness's claim target.
+Registration retries briefly while the daemon starts. Set
+`BRAYER_REGISTER_URL` when the MCP daemon is not on the default `38293`. If
+registration still fails the bridge keeps serving and logs the manual
+`brayer webhook set` command. Pin `BRAYER_WAKE_PORT` only when an ephemeral
+port cannot be used. Self-registration needs the HTTP MCP daemon
+(`brayer serve --mcp http`) and is accepted from loopback only; stdio or
+off-loopback deployments keep using the manual `brayer webhook set` path.

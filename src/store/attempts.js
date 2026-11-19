@@ -2,7 +2,7 @@ import { newAttemptId } from "../ids.js";
 import { now } from "./util.js";
 import { rowAttempt } from "./rows.js";
 
-export function createAttemptApi({ db, insertEvent, orderApi, clearExpiry }) {
+export function createAttemptApi({ db, insertEvent, orderApi, clearExpiry, cfg = {} }) {
   const attemptApi = {
     get(id) {
       return rowAttempt(db.prepare("SELECT * FROM attempts WHERE id=?").get(id));
@@ -42,6 +42,7 @@ export function createAttemptApi({ db, insertEvent, orderApi, clearExpiry }) {
           actor: agent, note: "attempt started", sessionRef, at: t,
         });
         db.exec("COMMIT");
+        clearExpiry?.(workOrderId);
         return { attempt: attemptApi.get(id), order: orderApi.get(workOrderId), reason: null };
       } catch (err) {
         db.exec("ROLLBACK");
@@ -133,6 +134,20 @@ export function createAttemptApi({ db, insertEvent, orderApi, clearExpiry }) {
           toolCalls: nextUsage.toolCalls,
         })) {
           if (!Number.isInteger(value)) throw new Error(`${name} must be an integer`);
+        }
+        if (cfg.requireCheckpoint) {
+          const linked = nextCheckpointId
+            ? db.prepare("SELECT 1 FROM checkpoints WHERE id=? AND attempt_id=?").get(nextCheckpointId, attemptId)
+            : db.prepare("SELECT 1 FROM checkpoints WHERE attempt_id=? LIMIT 1").get(attemptId);
+          if (!linked) {
+            throw new Error("checkpoint is required before finishing an attempt (set BRAYER_REQUIRE_CHECKPOINT=0 to disable)");
+          }
+        }
+        if (cfg.requireUsage) {
+          const reported = nextUsage.tokensIn + nextUsage.tokensOut + nextUsage.cacheRead + nextUsage.toolCalls;
+          if (reported <= 0) {
+            throw new Error("usage must be reported before finishing an attempt (set BRAYER_REQUIRE_USAGE=0 to disable)");
+          }
         }
         db.prepare(`
           UPDATE attempts
