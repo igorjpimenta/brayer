@@ -60,8 +60,9 @@ by the core daemon.
 | --- | --- | --- |
 | `BRAYER_WAKE_BEARER` | required | bearer checked on every wake request |
 | `BRAYER_OPENCODE_URL` | `http://127.0.0.1:4096` | OpenCode SDK base URL |
-| `BRAYER_WAKE_PORT` | `38296` | listen port; `brayer-wake --port N` overrides |
+| `BRAYER_WAKE_PORT` | `38295` | listen port; `brayer-wake --port N` overrides |
 
-The wake bridge must not share the MCP server's port. On a single-host setup
-the MCP daemon often occupies `38293` or `38295`; `38296` keeps the bridge
-separate.
+The wake bridge must not share the MCP server's port. Both default to
+unassigned user ports in the same block: MCP on `38293`, wake on `38295`. If
+the daemon is moved onto `38295`, start the bridge with
+`BRAYER_WAKE_PORT=38296` (or `--port 38296`).

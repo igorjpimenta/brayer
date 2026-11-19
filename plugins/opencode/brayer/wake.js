@@ -105,7 +105,7 @@ export async function startWakeServer({
   logger = console,
 } = {}) {
   if (!bearer) throw new Error("brayer wake: BRAYER_WAKE_BEARER is required");
-  const resolvedPort = port ?? (process.env.BRAYER_WAKE_PORT ? Number(process.env.BRAYER_WAKE_PORT) : 38296);
+  const resolvedPort = port ?? (process.env.BRAYER_WAKE_PORT ? Number(process.env.BRAYER_WAKE_PORT) : 38295);
   if (!Number.isInteger(resolvedPort) || resolvedPort < 0) throw new Error("brayer wake: port must be a non-negative integer");
   const { createOpencodeClient } = await import("@opencode-ai/sdk");
   const client = createOpencodeClient({ baseUrl });
