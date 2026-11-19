@@ -180,8 +180,9 @@ Plugins also auto-discover from `.opencode/plugins/` directories (project or
 global config dir).
 
 Automatic checkpoint/resume is not part of the OpenCode adapter; the agent uses
-the Brayer MCP tools directly. The optional `brayer-wake` bin receives the claim
-webhook and prompts the claiming session through the OpenCode SDK — see
+the Brayer MCP tools directly. The optional `brayer-wake` bin binds an ephemeral
+loopback port, registers that URL with the daemon, receives the claim webhook,
+and prompts the claiming session through the OpenCode SDK — see
 [webhooks and wake](docs/webhooks.md).
 
 ## The order lifecycle

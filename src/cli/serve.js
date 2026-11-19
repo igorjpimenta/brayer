@@ -24,6 +24,7 @@ export async function runServe({ rest, env, logger }) {
         port,
         host,
         bearer: env.BRAYER_MCP_BEARER,
+        registerBearer: env.BRAYER_REGISTER_BEARER,
         logger,
       });
       return;

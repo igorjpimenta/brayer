@@ -120,3 +120,55 @@ test("refuses a mint without X-Brayer-Harness even when env claims a harness", a
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("registers a wake target over loopback", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "brayer-http-"));
+  const store = createStore({ dbPath: path.join(dir, "store.sqlite"), config: { claimWebhookUrl: "http://127.0.0.1:9/claimed" } });
+  const server = await startMcpHttpServer({ store, port: 0, bearer: "secret", registerBearer: null });
+  const port = server.address().port;
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/api/brayer/webhooks`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        harness: "opencode",
+        url: "http://127.0.0.1:55123/api/brayer/claimed",
+        bearer: "wake-secret",
+      }),
+    });
+    assert.equal(res.status, 201);
+    const target = store.webhook.get("opencode");
+    assert.equal(target.url, "http://127.0.0.1:55123/api/brayer/claimed");
+    assert.equal(target.bearer, "wake-secret");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("requires BRAYER_REGISTER_BEARER when configured", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "brayer-http-"));
+  const store = createStore({ dbPath: path.join(dir, "store.sqlite"), config: { claimWebhookUrl: "http://127.0.0.1:9/claimed" } });
+  const server = await startMcpHttpServer({ store, port: 0, bearer: "secret", registerBearer: "reg-secret" });
+  const port = server.address().port;
+  try {
+    const denied = await fetch(`http://127.0.0.1:${port}/api/brayer/webhooks`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ harness: "opencode", url: "http://127.0.0.1:55123/claimed" }),
+    });
+    assert.equal(denied.status, 401);
+
+    const ok = await fetch(`http://127.0.0.1:${port}/api/brayer/webhooks`, {
+      method: "POST",
+      headers: { authorization: "Bearer reg-secret", "content-type": "application/json" },
+      body: JSON.stringify({ harness: "opencode", url: "http://127.0.0.1:55123/claimed" }),
+    });
+    assert.equal(ok.status, 201);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
