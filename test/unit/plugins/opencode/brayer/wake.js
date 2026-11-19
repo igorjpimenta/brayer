@@ -80,11 +80,10 @@ test("registers the wake URL with the daemon", async () => {
       harness: "opencode",
       url: "http://127.0.0.1:55123/api/brayer/claimed",
       bearer: "wake-secret",
-      registerBearer: "reg-secret",
     });
     assert.equal(result.ok, true);
     assert.equal(captured.path, "/api/brayer/webhooks");
-    assert.equal(captured.auth, "Bearer reg-secret");
+    assert.equal(captured.auth, undefined);
     assert.deepEqual(captured.body, {
       harness: "opencode",
       url: "http://127.0.0.1:55123/api/brayer/claimed",

@@ -103,7 +103,6 @@ export async function registerWakeTarget({
   harness = "opencode",
   url,
   bearer = null,
-  registerBearer = null,
   timeoutMs = 3000,
   attempts = 5,
   retryDelayMs = 500,
@@ -112,7 +111,6 @@ export async function registerWakeTarget({
   if (!registerUrl) return { ok: false, reason: "disabled" };
   const endpoint = `${String(registerUrl).replace(/\/+$/, "")}/api/brayer/webhooks`;
   const headers = { "content-type": "application/json" };
-  if (registerBearer) headers.authorization = `Bearer ${registerBearer}`;
   let last = { ok: false, reason: "error" };
   for (let i = 0; i < attempts; i += 1) {
     try {
@@ -141,7 +139,6 @@ export async function startWakeServer({
   harness = process.env.BRAYER_WAKE_HARNESS ?? "opencode",
   registerUrl = process.env.BRAYER_REGISTER_URL
     ?? `http://127.0.0.1:${process.env.BRAYER_HTTP_PORT ?? 38293}`,
-  registerBearer = process.env.BRAYER_REGISTER_BEARER ?? null,
   logger = console,
 } = {}) {
   if (!bearer) throw new Error("brayer wake: BRAYER_WAKE_BEARER is required");
@@ -170,7 +167,6 @@ export async function startWakeServer({
     harness,
     url: wakeUrl,
     bearer,
-    registerBearer,
     logger,
   });
   if (registered.ok) {

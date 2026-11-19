@@ -63,7 +63,6 @@ by the core daemon.
 | `BRAYER_WAKE_PORT` | `0` | ephemeral listen port; `--port N` pins one |
 | `BRAYER_WAKE_HARNESS` | `opencode` | harness registered with the daemon |
 | `BRAYER_REGISTER_URL` | `http://127.0.0.1:${BRAYER_HTTP_PORT??38293}` | daemon base URL for self-registration |
-| `BRAYER_REGISTER_BEARER` | unset | required when the daemon is bound off-loopback |
 
 The bridge binds an ephemeral port, then POSTs the actual URL to the daemon at
 `/api/brayer/webhooks`; the daemon upserts it as the harness's claim target.
@@ -72,5 +71,5 @@ Registration retries briefly while the daemon starts. Set
 registration still fails the bridge keeps serving and logs the manual
 `brayer webhook set` command. Pin `BRAYER_WAKE_PORT` only when an ephemeral
 port cannot be used. Self-registration needs the HTTP MCP daemon
-(`brayer serve --mcp http`); stdio deployments keep using the manual
-`brayer webhook set` path.
+(`brayer serve --mcp http`) and is accepted from loopback only; stdio or
+off-loopback deployments keep using the manual `brayer webhook set` path.

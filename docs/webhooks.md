@@ -58,15 +58,14 @@ Contract:
 - the resulting prompt instructs the session to attach with the given order id
   and report through the Brayer tools;
 - self-registration POSTs `{ harness, url, bearer }` to
-  `/api/brayer/webhooks`. The endpoint is loopback-only unless the daemon sets
-  `BRAYER_REGISTER_BEARER`; in that case the bridge must send the same value;
+  `/api/brayer/webhooks`. The endpoint is loopback-only; register manually when
+  the daemon is bound off-loopback;
 - registration retries briefly while the daemon starts; if it still fails the
   bridge logs the actual URL and the manual `brayer webhook set` command, and
   keeps serving.
 
 Envs: `BRAYER_WAKE_BEARER` (required), `BRAYER_OPENCODE_URL` (default
 `http://127.0.0.1:4096`), `BRAYER_WAKE_PORT` (default `0`, ephemeral;
-`brayer-wake --port N` pins), `BRAYER_WAKE_HARNESS` (default `opencode`),
-`BRAYER_REGISTER_URL` (default `http://127.0.0.1:38293`), and
-`BRAYER_REGISTER_BEARER` (optional). See
+`brayer-wake --port N` pins), `BRAYER_WAKE_HARNESS` (default `opencode`), and
+`BRAYER_REGISTER_URL` (default `http://127.0.0.1:38293`). See
 [configuration](configuration.md#wake-bridge-igorjpimentabrayer-opencode).

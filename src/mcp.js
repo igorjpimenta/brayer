@@ -66,7 +66,6 @@ export async function startMcpHttpServer({
   port = store.config.httpPort,
   host = "127.0.0.1",
   bearer,
-  registerBearer = process.env.BRAYER_REGISTER_BEARER,
   logger,
 } = {}) {
   if (!bearer) throw new Error("brayer: BRAYER_MCP_BEARER is required for HTTP");
@@ -97,18 +96,10 @@ export async function startMcpHttpServer({
       res.end(JSON.stringify({ error: "method not allowed" }));
       return;
     }
-    if (!registerBearer && !isLoopback(req)) {
+    if (!isLoopback(req)) {
       res.writeHead(403, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "registration requires BRAYER_REGISTER_BEARER off loopback" }));
+      res.end(JSON.stringify({ error: "registration is loopback-only" }));
       return;
-    }
-    if (registerBearer) {
-      const auth = req.headers.authorization ?? "";
-      if (!auth.startsWith("Bearer ") || !safeEqual(auth.slice(7), registerBearer)) {
-        res.writeHead(401, { "content-type": "application/json", "www-authenticate": "Bearer" });
-        res.end(JSON.stringify({ error: "unauthorized" }));
-        return;
-      }
     }
     let body;
     try {
