@@ -29,7 +29,7 @@ export async function runCheckpoint({ rest = [], env = process.env, logger = con
         throw new Error("brayer: --state must be a JSON object");
       }
     } else {
-      state = { source: "brayer-opencode", session: values.session, capturedAt: new Date().toISOString() };
+      state = { source: "brayer-plugin", session: values.session, capturedAt: new Date().toISOString() };
     }
     if (!state || typeof state !== "object" || Array.isArray(state)) {
       throw new Error("brayer: --state must be a JSON object");

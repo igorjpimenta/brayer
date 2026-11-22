@@ -4,7 +4,7 @@ import http from "node:http";
 import path from "node:path";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { parseJsonc, runDoctor } from "../../../../src/cli/doctor.js";
+import { parseJsonc, runDoctor } from "../../../../../plugins/opencode/brayer/doctor.js";
 
 async function withDir(fn) {
   const dir = mkdtempSync(path.join(tmpdir(), "brayer-doctor-"));

@@ -18,7 +18,7 @@ test("checkpoint write resolves the attempt from the session and writes an auto 
   assert.equal(written.kind, "auto");
   assert.equal(written.summary, "turn done");
   assert.match(written.treeHash, /^[0-9a-f]{64}$/);
-  assert.equal(written.state.source, "brayer-opencode");
+  assert.equal(written.state.source, "brayer-plugin");
   // The attempt now carries a checkpoint, which is what requireCheckpoint checks.
   assert.equal(store.attempt.get(attempt.id).checkpointId, result.checkpointId);
 }));

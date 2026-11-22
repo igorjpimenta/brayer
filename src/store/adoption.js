@@ -13,7 +13,8 @@ function ratio(n, d) {
 
 export function createAdoptionApi({ db }) {
   return {
-    report({ days = 30, now: at = Date.now(), harness = "opencode" } = {}) {
+    report({ days = 30, now: at = Date.now(), harness } = {}) {
+      if (!harness) throw new Error("harness is required");
       const since = at - days * DAY_MS;
       const like = `${harness}:%`;
 
@@ -85,7 +86,7 @@ export function createAdoptionApi({ db }) {
         { key: "realOrdersPerWeek", label: "Real orders claimed / week", value: realPerWeek, target: 20, ok: realPerWeek >= 20, unit: "orders" },
         { key: "claimToAttempt5m", label: "Claim → attempt within 5 min", value: claimToAttempt5m, target: 0.9, ok: claimToAttempt5m != null && claimToAttempt5m >= 0.9, unit: "ratio" },
         { key: "verdictShare", label: "Attempts with a verdict", value: verdictShare, target: 0.8, ok: verdictShare != null && verdictShare >= 0.8, unit: "ratio" },
-        { key: "leaseExpiries", label: "OpenCode lease expiries", value: leaseExpiries, target: 0, ok: leaseExpiries === 0, unit: "count", lowerIsBetter: true },
+        { key: "leaseExpiries", label: `${harness} lease expiries`, value: leaseExpiries, target: 0, ok: leaseExpiries === 0, unit: "count", lowerIsBetter: true },
         { key: "usageShare", label: "Attempts reporting usage", value: usageShare, target: 1, ok: usageShare != null && usageShare >= 1, unit: "ratio" },
         { key: "medianClaimToAttempt", label: "Median claim → attempt", value: medianDelta, target: 2 * 60 * 1000, ok: medianDelta != null && medianDelta < 2 * 60 * 1000, unit: "ms" },
       ];

@@ -1,7 +1,16 @@
+// doctor.js — OpenCode-side configuration check. This is harness knowledge
+// (which config file, which plugin must be loaded), so it lives in the
+// adapter, not in the harness-agnostic core; `brayer doctor` in the core CLI
+// was removed with it.
+
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { flagValue } from "./args.js";
+
+export function flagValue(args, name) {
+  const i = args.indexOf(name);
+  return i >= 0 ? args[i + 1] : null;
+}
 
 export function parseJsonc(text) {
   let out = "";
