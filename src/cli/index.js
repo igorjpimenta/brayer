@@ -16,8 +16,8 @@ const usage = `brayer ${VERSION}
 Usage:
   brayer --version
   brayer serve --mcp stdio
-  brayer serve --mcp http --port 38293 [--host 127.0.0.1]
-  brayer serve --ws --port 38294
+  brayer serve --mcp http --port 39293 [--host 127.0.0.1]
+  brayer serve --ws --port 39294
   brayer status [--json]
   brayer adoption --harness H [--days N] [--json]
   brayer doctor [--url URL] [--json]

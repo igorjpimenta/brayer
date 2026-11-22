@@ -42,7 +42,7 @@ One daemon serves every harness. Start it:
 
 ```sh
 BRAYER_MCP_BEARER=$(openssl rand -hex 32) \
-  brayer serve --mcp http --port 38293
+  brayer serve --mcp http --port 39293
 ```
 
 Point a harness at it and let the agent work an order — OpenClaw and OpenCode
@@ -113,7 +113,7 @@ One daemon for all harnesses (recommended):
   "mcp": {
     "servers": {
       "brayer": {
-        "url": "http://127.0.0.1:38293/mcp",
+        "url": "http://127.0.0.1:39293/mcp",
         "headers": {
           "X-Brayer-Harness": "openclaw",
           "Authorization": "Bearer <BRAYER_MCP_BEARER>"
@@ -155,7 +155,7 @@ canonical form for new setup:
     "servers": {
       "brayer": {
         "type": "remote",
-        "url": "http://127.0.0.1:38293/mcp",
+        "url": "http://127.0.0.1:39293/mcp",
         "headers": {
           "X-Brayer-Harness": "opencode",
           "Authorization": "Bearer <BRAYER_MCP_BEARER>"
@@ -170,7 +170,7 @@ canonical form for new setup:
 Or via the CLI:
 
 ```sh
-opencode mcp add brayer --url http://127.0.0.1:38293/mcp \
+opencode mcp add brayer --url http://127.0.0.1:39293/mcp \
   --header "X-Brayer-Harness=opencode" \
   --header "Authorization=Bearer <BRAYER_MCP_BEARER>"
 opencode plugin add @igorjpimenta/brayer-opencode

@@ -14,8 +14,8 @@ Resolved in [`src/config.js`](../src/config.js).
 | Blobs path | `BRAYER_BLOBS` | `~/.brayer/blobs` |
 | Claim lease | `BRAYER_LEASE_SECONDS` | `1800` |
 | Attempt cap | `BRAYER_MAX_ATTEMPTS` | `3` |
-| HTTP MCP port | `BRAYER_HTTP_PORT` | `38293` |
-| Event stream (WS) port | `BRAYER_WS_PORT` | `38294` |
+| HTTP MCP port | `BRAYER_HTTP_PORT` | `39293` |
+| Event stream (WS) port | `BRAYER_WS_PORT` | `39294` |
 | HTTP MCP bearer | `BRAYER_MCP_BEARER` | required for HTTP MCP |
 | Claim webhook URL | `BRAYER_CLAIM_WEBHOOK_URL` | unset |
 | Claim webhook bearer | `BRAYER_CLAIM_WEBHOOK_BEARER` | unset |
@@ -63,12 +63,12 @@ by the core daemon.
 | `BRAYER_OPENCODE_URL` | `http://127.0.0.1:4096` | OpenCode SDK base URL |
 | `BRAYER_WAKE_PORT` | `0` | ephemeral listen port; `--port N` pins one |
 | `BRAYER_WAKE_HARNESS` | `opencode` | harness registered with the daemon |
-| `BRAYER_REGISTER_URL` | `http://127.0.0.1:${BRAYER_HTTP_PORT??38293}` | daemon base URL for self-registration |
+| `BRAYER_REGISTER_URL` | `http://127.0.0.1:${BRAYER_HTTP_PORT??39293}` | daemon base URL for self-registration |
 
 The bridge binds an ephemeral port, then POSTs the actual URL to the daemon at
 `/api/brayer/webhooks`; the daemon upserts it as the harness's claim target.
 Registration retries briefly while the daemon starts. Set
-`BRAYER_REGISTER_URL` when the MCP daemon is not on the default `38293`. If
+`BRAYER_REGISTER_URL` when the MCP daemon is not on the default `39293`. If
 registration still fails the bridge keeps serving and logs the manual
 `brayer webhook set` command. Pin `BRAYER_WAKE_PORT` only when an ephemeral
 port cannot be used. Self-registration needs the HTTP MCP daemon
