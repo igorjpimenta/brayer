@@ -1,6 +1,6 @@
 {
   "name": "@igorjpimenta/brayer",
-  "version": "2026.11.22-beta.3",
+  "version": "2026.11.22-beta.4",
   "description": "Vendor-neutral command layer for agent work",
   "type": "module",
   "license": "MIT",
@@ -15,6 +15,9 @@
     "registry": "https://registry.npmjs.org",
     "access": "public"
   },
+  "exports": {
+    "./*": "./*"
+  },
   "files": [
     "bin/",
     "src/",
@@ -28,6 +31,7 @@
   "scripts": {
     "start": "node bin/brayer.js",
     "test": "node --test \"test/unit/**/*.js\"",
+    "pretest": "node scripts/dev-link-self.mjs",
     "test:e2e": "node --test \"test/e2e/*.test.js\"",
     "proof:opencode": "node scripts/proof-opencode.mjs",
     "db:generate": "drizzle-kit generate",
