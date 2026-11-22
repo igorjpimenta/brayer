@@ -5,34 +5,9 @@
 // a broken turn.
 
 import { execFile } from "node:child_process";
+import { formatReadyDigest } from "../../shared/digest.js";
 
-const ACCEPTANCE_CHARS = 160;
-const TITLE_CHARS = 80;
-const MAX_CHARS = 4000;
-
-function truncate(text, max) {
-  const t = String(text ?? "").trim();
-  return t.length <= max ? t : `${t.slice(0, max - 1)}…`;
-}
-
-export function formatReadyDigest(orders, { limit = 5 } = {}) {
-  const all = Array.isArray(orders) ? orders : [];
-  const shown = all.slice(0, limit);
-  if (!shown.length) return null;
-  const header = [
-    `Brayer: ${all.length} ready work order${all.length === 1 ? "" : "s"}`,
-    shown.length < all.length ? ` (top ${shown.length} by priority)` : "",
-    ". If one fits this session's task, claim it with brayer_order_claim — an attempt opens in the same call — and report through the Brayer tools. Otherwise ignore this note.",
-  ].join("");
-  const lines = shown.map((order) =>
-    `- ${order.id} (p${order.priority ?? 50}) ${truncate(order.title ?? "(untitled)", TITLE_CHARS)} — ${truncate(order.acceptance, ACCEPTANCE_CHARS)}`);
-  let text = [header, ...lines].join("\n");
-  while (text.length > MAX_CHARS && lines.length > 1) {
-    lines.pop();
-    text = [header, ...lines, `… ${all.length - lines.length} more: run brayer order ready`].join("\n");
-  }
-  return text;
-}
+export { formatReadyDigest, ACCEPTANCE_CHARS, TITLE_CHARS, MAX_CHARS } from "../../shared/digest.js";
 
 function brayerJson(args, { env, spawn, timeoutMs }) {
   return new Promise((resolve) => {
