@@ -173,7 +173,3 @@ jobs:
               --notes "npm: https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - if: steps.channel.outputs.tag == 'beta'
-        run: npm dist-tag add @igorjpimenta/brayer-opencode@$(node -p "require('./package.json').version") latest
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
