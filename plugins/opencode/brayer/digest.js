@@ -5,9 +5,9 @@
 // a broken turn.
 
 import { execFile } from "node:child_process";
-import { formatReadyDigest } from "../../shared/digest.js";
+import { formatReadyDigest } from "@igorjpimenta/brayer/plugins/shared/digest.js";
 
-export { formatReadyDigest, ACCEPTANCE_CHARS, TITLE_CHARS, MAX_CHARS } from "../../shared/digest.js";
+export { formatReadyDigest, ACCEPTANCE_CHARS, TITLE_CHARS, MAX_CHARS } from "@igorjpimenta/brayer/plugins/shared/digest.js";
 
 function brayerJson(args, { env, spawn, timeoutMs }) {
   return new Promise((resolve) => {

@@ -3,7 +3,7 @@
 // format through the shared formatter, skip when the session is already
 // working an attempt.
 
-import { formatReadyDigest } from "../../shared/digest.js";
+import { formatReadyDigest } from "@igorjpimenta/brayer/plugins/shared/digest.js";
 
 export function readyDigest({ store, session = null, limit = 5, env = process.env } = {}) {
   if (!store) return null;
