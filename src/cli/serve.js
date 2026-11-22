@@ -15,7 +15,7 @@ export async function runServe({ rest, env, logger }) {
     }
     if (transport === "http") {
       if (!env.BRAYER_MCP_BEARER) throw new Error("brayer: BRAYER_MCP_BEARER is required for HTTP");
-      const port = Number(flagValue(rest, "--port") ?? env.BRAYER_HTTP_PORT ?? 38293);
+      const port = Number(flagValue(rest, "--port") ?? env.BRAYER_HTTP_PORT ?? 39293);
       const host = flagValue(rest, "--host") ?? "127.0.0.1";
       // No harness base crosses into HTTP minting: the header alone declares
       // each session's harness, so a shared server stays construction-agnostic.

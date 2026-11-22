@@ -138,7 +138,7 @@ export async function startWakeServer({
   baseUrl = process.env.BRAYER_OPENCODE_URL ?? "http://127.0.0.1:4096",
   harness = process.env.BRAYER_WAKE_HARNESS ?? "opencode",
   registerUrl = process.env.BRAYER_REGISTER_URL
-    ?? `http://127.0.0.1:${process.env.BRAYER_HTTP_PORT ?? 38293}`,
+    ?? `http://127.0.0.1:${process.env.BRAYER_HTTP_PORT ?? 39293}`,
   logger = console,
 } = {}) {
   if (!bearer) throw new Error("brayer wake: BRAYER_WAKE_BEARER is required");

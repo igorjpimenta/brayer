@@ -39,10 +39,10 @@ BRAYER_WAKE_BEARER=$(openssl rand -hex 32) \
 # brayer wake: registered opencode at http://127.0.0.1:53621/api/brayer/claimed
 ```
 
-If the daemon is not on the default `38293`:
+If the daemon is not on the default `39293`:
 
 ```sh
-BRAYER_REGISTER_URL=http://127.0.0.1:38295 \
+BRAYER_REGISTER_URL=http://127.0.0.1:39295 \
 BRAYER_WAKE_BEARER=... brayer-wake
 ```
 
@@ -67,5 +67,5 @@ Contract:
 Envs: `BRAYER_WAKE_BEARER` (required), `BRAYER_OPENCODE_URL` (default
 `http://127.0.0.1:4096`), `BRAYER_WAKE_PORT` (default `0`, ephemeral;
 `brayer-wake --port N` pins), `BRAYER_WAKE_HARNESS` (default `opencode`), and
-`BRAYER_REGISTER_URL` (default `http://127.0.0.1:38293`). See
+`BRAYER_REGISTER_URL` (default `http://127.0.0.1:39293`). See
 [configuration](configuration.md#wake-bridge-igorjpimentabrayer-opencode).
