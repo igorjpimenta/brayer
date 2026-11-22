@@ -18,6 +18,8 @@
     "meta.js",
     "session.js",
     "webhook.js",
+    "digest.js",
+    "capture.js",
     "openclaw.plugin.json"
   ],
   "openclaw": {
@@ -32,6 +34,6 @@
     "openclaw": ">=2026.5.18"
   },
   "dependencies": {
-    "@igorjpimenta/brayer": "2026.11.22-beta.1"
+    "@igorjpimenta/brayer": "2026.11.22-beta.2"
   }
 }
