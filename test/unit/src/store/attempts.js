@@ -168,3 +168,15 @@ test("requires usage before finishing when configured", () => withTempDir((dir) 
     store.close();
   }
 }));
+
+test("forSession finds the latest running attempt for a session ref", () => withStore((store) => {
+  assert.equal(store.attempt.forSession("ses_x"), null);
+
+  const first = runningAttempt(store);
+  assert.equal(store.attempt.forSession("s1").id, first.attempt.id);
+
+  // finished attempts do not match the default running filter
+  store.attempt.finish({ attemptId: first.attempt.id, status: "finished", summary: "done" });
+  assert.equal(store.attempt.forSession("s1"), null);
+  assert.equal(store.attempt.forSession("s1", { status: "finished" }).id, first.attempt.id);
+}));

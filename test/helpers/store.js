@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createStore } from "../../src/store.js";
 
-export function withStore(fn) {
+export async function withStore(fn) {
   const dir = mkdtempSync(path.join(tmpdir(), "brayer-test-"));
   const dbPath = path.join(dir, "store.sqlite");
   const store = createStore({
@@ -16,17 +16,18 @@ export function withStore(fn) {
     },
   });
   try {
-    return fn(store, dir, dbPath);
+    // awaited so async test bodies finish before the temp dir is removed
+    return await fn(store, dir, dbPath);
   } finally {
     store.close();
     rmSync(dir, { recursive: true, force: true });
   }
 }
 
-export function withTempDir(fn) {
+export async function withTempDir(fn) {
   const dir = mkdtempSync(path.join(tmpdir(), "brayer-test-"));
   try {
-    return fn(dir);
+    return await fn(dir);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

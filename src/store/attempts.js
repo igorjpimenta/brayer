@@ -17,6 +17,17 @@ export function createAttemptApi({ db, insertEvent, orderApi, clearExpiry, cfg =
       return db.prepare(sql).all(...args).map(rowAttempt);
     },
 
+    // session_ref is whatever the caller passed as brayer_session — for the
+    // opencode plugin that is the OpenCode sessionID, unique per session.
+    forSession(sessionRef, { status = "running" } = {}) {
+      if (!sessionRef) return null;
+      const row = db.prepare(`
+        SELECT * FROM attempts WHERE session_ref=? AND status=?
+        ORDER BY started_at DESC, rowid DESC LIMIT 1
+      `).get(String(sessionRef), status);
+      return row ? rowAttempt(row) : null;
+    },
+
     start({ workOrderId, harness, agent, sessionRef = null, model = null } = {}) {
       if (!workOrderId) throw new Error("workOrderId is required");
       if (!harness) throw new Error("harness is required");

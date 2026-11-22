@@ -73,3 +73,29 @@ registration still fails the bridge keeps serving and logs the manual
 port cannot be used. Self-registration needs the HTTP MCP daemon
 (`brayer serve --mcp http`) and is accepted from loopback only; stdio or
 off-loopback deployments keep using the manual `brayer webhook set` path.
+
+## Session hooks (`@igorjpimenta/brayer-opencode`)
+
+Read inside the OpenCode server process ([`setup.js`](../plugins/opencode/brayer/setup.js),
+[`hooks.js`](../plugins/opencode/brayer/hooks.js)) and by the CLI commands the
+plugin spawns (`brayer order ready`, `brayer attempt running`,
+`brayer checkpoint write`).
+
+| Env | Default | Notes |
+| --- | --- | --- |
+| `BRAYER_BIN` | `brayer` | CLI binary the plugin spawns |
+| `BRAYER_READY_LIMIT` | `5` | max orders shown in the session-start digest |
+| `BRAYER_DIGEST_DISABLE` | unset | `1` disables the ready-work digest |
+| `BRAYER_CAPTURE_DISABLE` | unset | `1` disables idle auto-checkpoints |
+| `BRAYER_CAPTURE_MIN_MS` | `300000` | min interval between auto-checkpoints per session |
+
+Behavior:
+
+- the first model request of a session gets one bounded ready-order digest
+  injected into the system instructions (≤5 orders, ≤4000 chars, silent
+  failure); a session that already runs an attempt is skipped;
+- on `session.idle`, sessions that touched a brayer tool write one auto
+  checkpoint (`kind: auto`) through `brayer checkpoint write --session`, which
+  resolves the running attempt from the session ref; throttled per session.
+  These checkpoints are what `requireCheckpoint` counts, so the knob can be
+  enabled once the plugin is deployed.
