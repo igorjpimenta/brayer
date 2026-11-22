@@ -102,3 +102,99 @@ test("setup opens the attempt in the same call as the claim", async () => {
   hooks["execute.before"](event);
   assert.equal(event.input.start_attempt, true);
 });
+
+test("setup injects the ready-work digest once per session", async () => {
+  const { setup } = await import("../../../../../plugins/opencode/brayer/setup.js");
+  const hooks = {};
+  const ctx = {
+    session: { hook: async (name, callback) => { hooks[name] = callback; return { dispose() {} }; } },
+    tool: { hook: async (name, callback) => { hooks[name] = callback; return { dispose() {} }; } },
+  };
+  let digestCalls = 0;
+  const buildDigest = async () => {
+    digestCalls += 1;
+    return "Brayer: 1 ready work order.";
+  };
+  await setup(ctx, { buildDigest });
+
+  const first = { sessionID: "ses_5", agent: "build", system: [] };
+  await hooks.context(first);
+  assert.deepEqual(first.system, [{ type: "text", text: "Brayer: 1 ready work order." }]);
+
+  const second = { sessionID: "ses_5", agent: "build", system: [] };
+  await hooks.context(second);
+  assert.deepEqual(second.system, []);
+  assert.equal(digestCalls, 1);
+});
+
+test("setup never injects when the digest is empty and survives a digest error", async () => {
+  const { setup } = await import("../../../../../plugins/opencode/brayer/setup.js");
+  const hooks = {};
+  const ctx = {
+    session: { hook: async (name, callback) => { hooks[name] = callback; return { dispose() {} }; } },
+    tool: { hook: async (name, callback) => { hooks[name] = callback; return { dispose() {} }; } },
+  };
+  await setup(ctx, { buildDigest: async () => null });
+  const event = { sessionID: "ses_6", agent: "build", system: [] };
+  await hooks.context(event);
+  assert.deepEqual(event.system, []);
+
+  await setup({ session: { hook: async () => ({ dispose() {} }) } }, {
+    buildDigest: async () => { throw new Error("boom"); },
+  });
+});
+
+test("setup captures a checkpoint on idle for brayer sessions only", async () => {
+  const { setup } = await import("../../../../../plugins/opencode/brayer/setup.js");
+  const hooks = {};
+  let release = null;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const ctx = {
+    session: { hook: async (name, callback) => { hooks[name] = callback; return { dispose() {} }; } },
+    tool: { hook: async (name, callback) => { hooks[name] = callback; return { dispose() {} }; } },
+    event: {
+      subscribe: async (options) => {
+        assert.deepEqual(options.types, ["session.idle"]);
+        return (async function* generate() {
+          yield { type: "session.idle", data: { sessionID: "ses_10" } };
+          await gate;
+          yield { type: "session.idle", data: { sessionID: "ses_9" } };
+        })();
+      },
+    },
+  };
+  const captured = [];
+  const cleanup = await setup(ctx, {
+    buildDigest: async () => null,
+    makeCapture: () => async ({ sessionID }) => { captured.push(sessionID); },
+  });
+  // Brayer session: stamped by a tool call, then captured on its idle event.
+  hooks["execute.before"]({ tool: "brayer_order_get", sessionID: "ses_9", input: {} });
+  release();
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(captured, ["ses_9"]);
+  assert.equal(typeof cleanup, "function");
+});
+
+test("the V1 host gets the digest through the system transform once per session", async () => {
+  let digestCalls = 0;
+  const hooks = createBrayerHooks({ buildDigest: async () => { digestCalls += 1; return "Brayer: ready."; } });
+  const first = { system: [] };
+  await hooks["experimental.chat.system.transform"]({ sessionID: "ses_1" }, first);
+  const second = { system: [] };
+  await hooks["experimental.chat.system.transform"]({ sessionID: "ses_1" }, second);
+  assert.deepEqual(first.system, ["Brayer: ready."]);
+  assert.deepEqual(second.system, []);
+  assert.equal(digestCalls, 1);
+});
+
+test("the V1 event hook captures only session.idle events for brayer sessions", async () => {
+  const captured = [];
+  const hooks = createBrayerHooks({ makeCapture: () => async ({ sessionID }) => { captured.push(sessionID); } });
+  await hooks["tool.execute.before"]({ tool: "brayer_order_get", sessionID: "ses_7" }, { args: {} });
+  await hooks["event"]({ event: { type: "session.updated", properties: { sessionID: "ses_7" } } });
+  await hooks["event"]({ event: { type: "session.idle", properties: { sessionID: "ses_7" } } });
+  await hooks["event"]({ event: { type: "session.idle", properties: { sessionID: "ses_8" } } });
+  assert.deepEqual(captured, ["ses_7"]);
+});

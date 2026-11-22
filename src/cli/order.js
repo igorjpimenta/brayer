@@ -35,6 +35,14 @@ export async function runOrder({ rest = [], env = process.env, logger = console 
       return result;
     }
 
+    if (sub === "ready") {
+      const limit = values.limit === undefined ? 5 : Number(values.limit);
+      if (!Number.isInteger(limit) || limit < 1) throw new Error("brayer: order ready requires --limit N (>= 1)");
+      const orders = store.order.list({ status: "ready", limit });
+      console.log(JSON.stringify({ orders }, null, 2));
+      return orders;
+    }
+
     if (sub === "get") {
       if (!values.id) throw new Error("brayer: order get requires --id");
       const order = store.order.get(values.id);
@@ -49,7 +57,7 @@ export async function runOrder({ rest = [], env = process.env, logger = console 
       return order;
     }
 
-    throw new Error("brayer: order requires create, cancel or get");
+    throw new Error("brayer: order requires create, cancel, ready or get");
   } finally {
     store.close();
   }

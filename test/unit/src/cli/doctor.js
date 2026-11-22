@@ -1,15 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
+import { mkdtempSync, rmSync } from "node:fs";
 import path from "node:path";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { parseJsonc, runDoctor } from "../../../../src/cli/doctor.js";
+import { runDoctor } from "../../../../src/cli/doctor.js";
 
-async function withDir(fn) {
+function withTempDb(fn) {
   const dir = mkdtempSync(path.join(tmpdir(), "brayer-doctor-"));
   try {
-    return await fn(dir);
+    return fn(path.join(dir, "store.sqlite"));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -30,65 +30,58 @@ function healthServer(ok = true) {
   });
 }
 
-function configFile(dir, { plugin = true, mcp = true } = {}) {
-  const file = path.join(dir, "opencode.jsonc");
-  writeFileSync(file, `{
-    // identity plugin and remote MCP
-    "plugin": [${plugin ? '"file:///opt/brayer-opencode/index.js"' : ""}],
-    "mcp": {${mcp ? '"brayer": { "type": "remote", "url": "http://127.0.0.1:38295/mcp" }' : ""}}
-  }`);
-  return file;
-}
-
-test("parses jsonc without eating // inside strings", () => {
-  const parsed = parseJsonc(`{
-    // comment
-    "url": "http://127.0.0.1:38295/mcp", /* block */
-    "list": [1, 2,],
-  }`);
-  assert.equal(parsed.url, "http://127.0.0.1:38295/mcp");
-  assert.deepEqual(parsed.list, [1, 2]);
+test("doctor passes on a fresh db with a healthy mcp server and no webhooks is a fail", async () => {
+  await withTempDb(async (dbPath) => {
+    const server = await healthServer();
+    try {
+      const result = await runDoctor({
+        rest: ["--url", `http://127.0.0.1:${server.address().port}`, "--json"],
+        env: { BRAYER_DB: dbPath },
+        logger: { log() {} },
+      });
+      const byName = Object.fromEntries(result.checks.map((c) => [c.name, c]));
+      assert.equal(byName.database.ok, true);
+      assert.equal(byName["mcp http"].ok, true);
+      assert.equal(byName["claim webhooks"].ok, false);
+      assert.match(byName["claim webhooks"].detail, /none registered/);
+      assert.equal(result.ok, false);
+    } finally {
+      server.close();
+    }
+  });
 });
 
-test("doctor passes a complete config against a healthy server", () => withDir(async (dir) => {
-  const server = await healthServer();
-  try {
-    const result = await runDoctor({
-      rest: ["--config", configFile(dir), "--url", `http://127.0.0.1:${server.address().port}`, "--json"],
-      logger: { log() {} },
-    });
-    assert.equal(result.ok, true);
-    assert.deepEqual(result.checks.map((c) => c.ok), [true, true, true, true]);
-  } finally {
-    server.close();
-  }
-}));
+test("doctor passes end to end with webhooks registered", async () => {
+  await withTempDb(async (dbPath) => {
+    const server = await healthServer();
+    try {
+      const { createStore } = await import("../../../../src/store.js");
+      const store = createStore({ dbPath });
+      store.webhook.upsert({ harness: "opencode", url: "http://127.0.0.1:61912/api/brayer/claimed" });
+      store.close();
 
-test("doctor fails when the identity plugin is missing", () => withDir(async (dir) => {
-  const server = await healthServer();
-  try {
-    const result = await runDoctor({
-      rest: ["--config", configFile(dir, { plugin: false }), "--url", `http://127.0.0.1:${server.address().port}`],
-      logger: { log() {} },
-    });
-    assert.equal(result.ok, false);
-    const plugin = result.checks.find((c) => c.name === "identity plugin");
-    assert.equal(plugin.ok, false);
-    assert.match(plugin.detail, /brayer-opencode/);
-  } finally {
-    server.close();
-  }
-}));
+      const result = await runDoctor({
+        rest: ["--url", `http://127.0.0.1:${server.address().port}`],
+        env: { BRAYER_DB: dbPath },
+        logger: { log() {} },
+      });
+      assert.equal(result.ok, true);
+      const hooks = result.checks.find((c) => c.name === "claim webhooks");
+      assert.match(hooks.detail, /opencode -> http:\/\/127\.0\.0\.1:61912/);
+    } finally {
+      server.close();
+    }
+  });
+});
 
-test("doctor fails when brayer MCP is missing", () => withDir(async (dir) => {
-  const server = await healthServer();
-  try {
+test("doctor fails when the mcp server is unreachable", async () => {
+  await withTempDb(async (dbPath) => {
     const result = await runDoctor({
-      rest: ["--config", configFile(dir, { mcp: false }), "--url", `http://127.0.0.1:${server.address().port}`],
+      rest: ["--url", "http://127.0.0.1:9"],
+      env: { BRAYER_DB: dbPath },
       logger: { log() {} },
     });
-    assert.equal(result.checks.find((c) => c.name === "brayer MCP").ok, false);
-  } finally {
-    server.close();
-  }
-}));
+    const mcp = result.checks.find((c) => c.name === "mcp http");
+    assert.equal(mcp.ok, false);
+  });
+});

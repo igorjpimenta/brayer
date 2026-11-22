@@ -17,6 +17,18 @@ export function createAttemptApi({ db, insertEvent, orderApi, clearExpiry, cfg =
       return db.prepare(sql).all(...args).map(rowAttempt);
     },
 
+    // session_ref is whatever the caller passed as brayer_session — each
+    // harness adapter defines what that value is; the store only requires
+    // that one session maps to one stable ref.
+    forSession(sessionRef, { status = "running" } = {}) {
+      if (!sessionRef) return null;
+      const row = db.prepare(`
+        SELECT * FROM attempts WHERE session_ref=? AND status=?
+        ORDER BY started_at DESC, rowid DESC LIMIT 1
+      `).get(String(sessionRef), status);
+      return row ? rowAttempt(row) : null;
+    },
+
     start({ workOrderId, harness, agent, sessionRef = null, model = null } = {}) {
       if (!workOrderId) throw new Error("workOrderId is required");
       if (!harness) throw new Error("harness is required");

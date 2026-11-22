@@ -21,6 +21,8 @@
     "hooks.js",
     "identity.js",
     "setup.js",
+    "digest.js",
+    "capture.js",
     "wake.js",
     "bin/"
   ],

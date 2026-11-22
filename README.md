@@ -63,8 +63,8 @@ Verify from the operator side — no transcript reading:
 $ brayer status
 WO-lqcvx0si  refactor invoice parser   review   openclaw:main:agent:main:explicit:ses_x
 
-brayer doctor --harness opencode   # fails when the MCP entry or identity plugin is missing
-brayer adoption --days 30          # real orders → attempts → verdicts, lease expiries, usage
+brayer doctor                      # core wiring: database, MCP /health, claim-webhook registrations
+brayer adoption --days 30 --harness opencode   # real orders → attempts → verdicts, lease expiries, usage
 ```
 
 All MCP tools and their contracts are defined in [`src/tools/`](src/tools/index.js) — or just list them from the running server.
@@ -74,7 +74,7 @@ All MCP tools and their contracts are defined in [`src/tools/`](src/tools/index.
 - The **Store** is one SQLite database (`~/.brayer/store.sqlite`) with content-addressed evidence blobs — the single source of truth, migrates applied on open.
 - The **MCP server** exposes the whole desk as Brayer tools over stdio (one pipe per harness) or streamable HTTP (one shared daemon). Identity is stamped at the transport edge.
 - The **Event stream** (`brayer serve --ws`) and claim webhooks notify dashboards and wake idle agents when work arrives.
-- **Harness adapters** (`@igorjpimenta/brayer-openclaw`, `@igorjpimenta/brayer-opencode`) stamp identity, checkpoint on turn end (OpenClaw), and receive claim webhooks. The optional `brayer-wake` bridge prompts an OpenCode session when a webhook fires.
+- **Harness adapters** (`@igorjpimenta/brayer-openclaw`, `@igorjpimenta/brayer-opencode`) stamp identity, inject a session-start ready-work digest, checkpoint on turn end (OpenClaw) / session idle (OpenCode), and receive claim webhooks. The optional `brayer-wake` bridge prompts an OpenCode session when a webhook fires.
 
 ```
 harness agent ──MCP (stdio | HTTP + X-Brayer-Harness)── ▶ MCP server ──▶ SQLite store

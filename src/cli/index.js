@@ -6,6 +6,8 @@ import { runStatus } from "./status.js";
 import { runSweep } from "./sweep.js";
 import { runWebhook } from "./webhook.js";
 import { runOrder } from "./order.js";
+import { runAttempt } from "./attempt.js";
+import { runCheckpoint } from "./checkpoint.js";
 import { runAdoption } from "./adoption.js";
 import { runDoctor } from "./doctor.js";
 
@@ -17,12 +19,15 @@ Usage:
   brayer serve --mcp http --port 38293 [--host 127.0.0.1]
   brayer serve --ws --port 38294
   brayer status [--json]
-  brayer adoption [--days N] [--harness H] [--json]
-  brayer doctor [--harness H] [--config PATH] [--url URL] [--json]
+  brayer adoption --harness H [--days N] [--json]
+  brayer doctor [--url URL] [--json]
   brayer sweep [--max-attempts N]
   brayer order create --title T --goal G --acceptance A [--workspace W] [--status ready]
   brayer order cancel --id ID [--reason R]
   brayer order get --id ID
+  brayer order ready [--limit N]
+  brayer attempt running --session SID
+  brayer checkpoint write --session SID [--summary S] [--state JSON] [--kind K]
   brayer webhook set --harness H --url U [--bearer B] [--timeout-ms N]
   brayer webhook list
   brayer webhook remove --harness H
@@ -67,6 +72,16 @@ export async function main(argv = process.argv.slice(2), { env = process.env, lo
 
   if (command === "order") {
     await runOrder({ rest, env, logger });
+    return;
+  }
+
+  if (command === "attempt") {
+    await runAttempt({ rest, env, logger });
+    return;
+  }
+
+  if (command === "checkpoint") {
+    await runCheckpoint({ rest, env, logger });
     return;
   }
 

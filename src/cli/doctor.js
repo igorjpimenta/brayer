@@ -1,106 +1,55 @@
-import { existsSync, readFileSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
+// doctor.js — core wiring check: database, MCP HTTP server, claim webhooks.
+// Harness-specific knowledge (which config file, which plugin is loaded)
+// lives in each adapter's own doctor; this only checks what belongs to core.
+
+import { createStore } from "../store.js";
+import { DEFAULTS } from "../config.js";
 import { flagValue } from "./args.js";
 
-export function parseJsonc(text) {
-  let out = "";
-  let inString = false;
-  let escaped = false;
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i];
-    const next = text[i + 1];
-    if (inString) {
-      out += ch;
-      if (escaped) escaped = false;
-      else if (ch === "\\") escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') { inString = true; out += ch; continue; }
-    if (ch === "/" && next === "/") {
-      while (i < text.length && text[i] !== "\n") i += 1;
-      out += "\n";
-      continue;
-    }
-    if (ch === "/" && next === "*") {
-      i += 2;
-      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i += 1;
-      i += 1;
-      continue;
-    }
-    out += ch;
-  }
-  return JSON.parse(out.replace(/,(\s*[}\]])/g, "$1"));
-}
-
-function resolveConfigPath(explicit, env) {
-  if (explicit) return explicit;
-  if (env.OPENCODE_CONFIG) return env.OPENCODE_CONFIG;
-  const base = path.join(os.homedir(), ".config", "opencode");
-  for (const name of ["opencode.json", "opencode.jsonc"]) {
-    const candidate = path.join(base, name);
-    if (existsSync(candidate)) return candidate;
-  }
-  return path.join(base, "opencode.jsonc");
-}
-
-function pluginConfigured(plugins) {
-  return Array.isArray(plugins) && plugins.some((entry) =>
-    typeof entry === "string" && entry.includes("brayer-opencode")
-  );
-}
-
 async function healthCheck(url) {
-  if (!url) return { name: "http health", ok: true, detail: "skipped (no --url)" };
+  if (!url) return { name: "mcp http", ok: true, detail: "skipped (no --url)" };
   try {
     const res = await fetch(new URL("/health", url), { signal: AbortSignal.timeout(1500) });
-    if (!res.ok) return { name: "http health", ok: false, detail: `${url} -> ${res.status}` };
+    if (!res.ok) return { name: "mcp http", ok: false, detail: `${url} -> ${res.status}` };
     const body = await res.json();
-    return { name: "http health", ok: body?.ok === true, detail: `${url} -> ${JSON.stringify(body)}` };
+    return { name: "mcp http", ok: body?.ok === true, detail: `${url} -> ${JSON.stringify(body)}` };
   } catch (err) {
-    return { name: "http health", ok: false, detail: `${url}: ${err?.message ?? err}` };
+    return { name: "mcp http", ok: false, detail: `${url}: ${err?.message ?? err}` };
   }
 }
 
 export async function runDoctor({ rest = [], env = process.env, logger = console } = {}) {
-  const harness = flagValue(rest, "--harness") ?? "opencode";
-  const configPath = resolveConfigPath(flagValue(rest, "--config"), env);
+  const url = flagValue(rest, "--url") ?? (env.BRAYER_HTTP_PORT ? `http://127.0.0.1:${env.BRAYER_HTTP_PORT}` : `http://127.0.0.1:${DEFAULTS.httpPort}`);
   const checks = [];
 
-  let config = null;
+  let store;
   try {
-    config = parseJsonc(readFileSync(configPath, "utf8"));
-    checks.push({ name: "identity config", ok: true, detail: configPath });
+    store = createStore({ dbPath: env.BRAYER_DB || undefined });
+    const count = store.order.list().length;
+    checks.push({ name: "database", ok: true, detail: `${env.BRAYER_DB ?? DEFAULTS.dbPath} (${count} orders)` });
   } catch (err) {
-    checks.push({ name: "identity config", ok: false, detail: `${configPath}: ${err?.message ?? err}` });
+    checks.push({ name: "database", ok: false, detail: `${env.BRAYER_DB ?? DEFAULTS.dbPath}: ${err?.message ?? err}` });
   }
 
-  const url = flagValue(rest, "--url") ?? config?.mcp?.brayer?.url ?? "http://127.0.0.1:38293";
-
-  if (config) {
-    const mcp = config?.mcp?.brayer;
-    checks.push({
-      name: "brayer MCP",
-      ok: Boolean(mcp && (mcp.url || mcp.command)),
-      detail: mcp ? (mcp.url ?? mcp.command) : "missing mcp.brayer",
-    });
-    checks.push({
-      name: "identity plugin",
-      ok: pluginConfigured(config?.plugin),
-      detail: pluginConfigured(config?.plugin)
-        ? "brayer-opencode loaded"
-        : "missing @igorjpimenta/brayer-opencode — bare MCP calls fail identity stamping",
-    });
-  }
+  const hooks = store
+    ? store.webhook.list()
+    : [];
+  checks.push({
+    name: "claim webhooks",
+    ok: hooks.length > 0,
+    detail: hooks.length
+      ? hooks.map((h) => `${h.harness} -> ${h.url}`).join(", ")
+      : "none registered — claims stay in the queue until a harness registers",
+  });
+  store?.close();
 
   checks.push(await healthCheck(url));
 
   if (rest.includes("--json")) {
-    console.log(JSON.stringify({ harness, config: configPath, checks }, null, 2));
+    console.log(JSON.stringify({ url, checks }, null, 2));
   } else {
     for (const check of checks) logger.log(`${check.ok ? "PASS" : "FAIL"}  ${check.name.padEnd(16)} ${check.detail}`);
   }
   const ok = checks.every((check) => check.ok);
-  return { harness, config: configPath, checks, ok };
+  return { url, checks, ok };
 }

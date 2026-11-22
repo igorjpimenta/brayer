@@ -6,7 +6,8 @@ export async function runAdoption({ rest = [], env = process.env, logger = conso
   const daysRaw = flagValue(rest, "--days");
   const days = daysRaw == null ? 30 : Number(daysRaw);
   if (!Number.isInteger(days) || days < 1) throw new Error("brayer: --days must be a positive integer");
-  const harness = flagValue(rest, "--harness") ?? "opencode";
+  const harness = flagValue(rest, "--harness");
+  if (!harness) throw new Error("brayer: adoption requires --harness");
   const store = createStore({ dbPath: env.BRAYER_DB || undefined });
   try {
     const report = store.adoption.report({ days, harness });

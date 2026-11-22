@@ -43,7 +43,7 @@ function fullLifecycle(store, workspace = "/tmp/repo") {
 
 test("reports a healthy opencode lifecycle", () => withStore((store) => {
   fullLifecycle(store);
-  const report = store.adoption.report({ days: 30 });
+  const report = store.adoption.report({ days: 30, harness: "opencode" });
   assert.equal(report.claims.total, 1);
   assert.equal(report.claims.real, 1);
   assert.equal(report.claims.matched, 1);
@@ -68,13 +68,13 @@ test("attributes lease expiries to the claiming harness", () => withStore((store
   store.claim.claimById({ id: openclawOrder.id, agentId: "openclaw:main:ses-2", leaseSeconds: 0 });
   store.claim.sweepExpired({ at: Date.now() + 1 });
 
-  const report = store.adoption.report({ days: 30 });
+  const report = store.adoption.report({ days: 30, harness: "opencode" });
   assert.equal(report.claims.total, 1);
   assert.equal(report.leaseExpiries, 1);
 }));
 
 test("empty store reports null rates without throwing", () => withStore((store) => {
-  const report = store.adoption.report({ days: 30 });
+  const report = store.adoption.report({ days: 30, harness: "opencode" });
   assert.equal(report.claims.total, 0);
   assert.equal(report.attempts.total, 0);
   assert.equal(report.rates.claimToAttempt5m, null);

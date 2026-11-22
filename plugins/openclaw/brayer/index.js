@@ -5,7 +5,9 @@ import {
   checkpointSession,
   resumeSession,
 } from "@igorjpimenta/brayer/plugins/shared/contract.js";
-import { buildBrayerMeta } from "./meta.js";
+import { buildBrayerMeta, isBrayerTool } from "./meta.js";
+import { readyDigest } from "./digest.js";
+import { createDiscoveryCapture } from "./capture.js";
 import { checkpointPayload, resumeContext, sessionFromContext } from "./session.js";
 import { registerClaimWebhook } from "./webhook.js";
 
@@ -46,12 +48,8 @@ export default definePluginEntry({
       return;
     }
 
-    api.on("before_tool_call", (event, ctx) => buildBrayerMeta(event, ctx));
-    registerClaimWebhook({ api, logger: api.logger });
-
     const cfg = api.pluginConfig ?? {};
     const orderId = cfg.orderId ?? process.env.BRAYER_ORDER_ID ?? null;
-    if (!orderId || cfg.autoCheckpoint === false) return;
 
     let store = null;
     const getStore = () => {
@@ -60,6 +58,61 @@ export default definePluginEntry({
       }
       return store;
     };
+    // Sessions that called a brayer tool at least once — the capture
+    // candidates for the general-gateway flow below.
+    const brayerTouched = new Set();
+
+    api.on("before_tool_call", (event, ctx) => {
+      buildBrayerMeta(event, ctx);
+      const session = sessionFromContext(event, ctx);
+      const toolName = event?.toolName ?? ctx?.toolName;
+      if (session && isBrayerTool(toolName)) brayerTouched.add(session.session);
+    });
+    registerClaimWebhook({ api, logger: api.logger });
+
+    api.on("gateway_stop", () => {
+      store?.close();
+      store = null;
+    });
+
+    // General-gateway mode: no dedicated order is configured, so the plugin
+    // surfaces ready work proactively and checkpoints whatever attempts the
+    // sessions opened through the MCP tools.
+    if (!orderId || cfg.autoCheckpoint === false) {
+      const digested = new Set();
+      const capture = createDiscoveryCapture({
+        store: getStore,
+        logger: api.logger,
+        workspaceDir: cfg.workspaceDir,
+      });
+
+      api.on("before_prompt_build", (event, ctx) => {
+        const session = sessionFromContext(event, ctx);
+        if (!session || digested.has(session.session)) return;
+        digested.add(session.session);
+        try {
+          const text = readyDigest({ store: getStore(), session: session.session });
+          if (text) return { prependContext: text };
+        } catch (err) {
+          api.logger.warn(`brayer: digest failed: ${err?.message ?? err}`);
+        }
+      });
+
+      const captureFor = (event, ctx) => {
+        const session = sessionFromContext(event, ctx);
+        if (!session || !brayerTouched.has(session.session)) return;
+        try {
+          const attempt = getStore().attempt.forSession(session.session);
+          if (attempt) capture({ session, attempt });
+        } catch (err) {
+          api.logger.warn(`brayer: capture failed: ${err?.message ?? err}`);
+        }
+      };
+      api.on("agent_end", captureFor);
+      api.on("session_end", captureFor);
+      return;
+    }
+
     const attach = (session) => attachSession({ store: getStore(), session, orderId });
 
     api.on("agent_end", (event, ctx) => {
@@ -109,11 +162,6 @@ export default definePluginEntry({
       } catch (err) {
         api.logger.warn(`brayer: resume failed: ${err?.message ?? err}`);
       }
-    });
-
-    api.on("gateway_stop", () => {
-      store?.close();
-      store = null;
     });
   },
 });

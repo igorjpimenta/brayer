@@ -27,12 +27,12 @@ test("formats the adoption scorecard with pass/fail and units", () => {
       { key: "realOrdersPerWeek", label: "Real orders claimed / week", value: 0, target: 20, ok: false, unit: "orders" },
       { key: "claimToAttempt5m", label: "Claim → attempt within 5 min", value: 0.5, target: 0.9, ok: false, unit: "ratio" },
       { key: "medianClaimToAttempt", label: "Median claim → attempt", value: 1500, target: 120000, ok: true, unit: "ms" },
-      { key: "leaseExpiries", label: "OpenCode lease expiries", value: 3, target: 0, ok: false, unit: "count", lowerIsBetter: true },
+      { key: "leaseExpiries", label: "opencode lease expiries", value: 3, target: 0, ok: false, unit: "count", lowerIsBetter: true },
     ],
   });
   assert.match(out, /opencode adoption — last 30 days/);
   assert.match(out, /FAIL\s+Real orders claimed \/ week\s+0\.0\s+≥ 20/);
   assert.match(out, /FAIL\s+Claim → attempt within 5 min\s+50\.0%\s+≥ 90%/);
   assert.match(out, /PASS\s+Median claim → attempt\s+1\.5s\s+≥ 120s/);
-  assert.match(out, /FAIL\s+OpenCode lease expiries\s+3\s+≤ 0/);
+  assert.match(out, /FAIL\s+opencode lease expiries\s+3\s+≤ 0/);
 });

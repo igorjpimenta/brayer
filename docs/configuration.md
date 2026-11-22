@@ -36,10 +36,11 @@ Harness-side identity knobs:
 | `BRAYER_HARNESS` | stdio MCP and the event stream | required for stdio; must not cross into HTTP minting |
 | `BRAYER_AGENT` | OpenCode adapter | fallback when the session agent cannot be captured |
 
-The OpenClaw adapter reads no environment: its transport config lives in
-`openclaw.json` (`mcp.servers.brayer.headers`, incl.
+The OpenClaw adapter reads no transport environment: its transport config
+lives in `openclaw.json` (`mcp.servers.brayer.headers`, incl.
 `X-Brayer-Harness`), and its claim webhook route is registered in the store via
-`brayer webhook set` rather than an env ([webhooks](webhooks.md)).
+`brayer webhook set` rather than an env ([webhooks](webhooks.md)). The session
+hooks above are its only envs.
 
 Package shape differs by design: the OpenClaw adapter opens the store directly
 from the core daemon's code, so `@igorjpimenta/brayer` is a declared
@@ -73,3 +74,50 @@ registration still fails the bridge keeps serving and logs the manual
 port cannot be used. Self-registration needs the HTTP MCP daemon
 (`brayer serve --mcp http`) and is accepted from loopback only; stdio or
 off-loopback deployments keep using the manual `brayer webhook set` path.
+
+## Session hooks (`@igorjpimenta/brayer-opencode`)
+
+Read inside the OpenCode server process ([`setup.js`](../plugins/opencode/brayer/setup.js),
+[`hooks.js`](../plugins/opencode/brayer/hooks.js)) and by the CLI commands the
+plugin spawns (`brayer order ready`, `brayer attempt running`,
+`brayer checkpoint write`).
+
+| Env | Default | Notes |
+| --- | --- | --- |
+| `BRAYER_BIN` | `brayer` | CLI binary the plugin spawns |
+| `BRAYER_READY_LIMIT` | `5` | max orders shown in the session-start digest |
+| `BRAYER_DIGEST_DISABLE` | unset | `1` disables the ready-work digest |
+| `BRAYER_CAPTURE_DISABLE` | unset | `1` disables idle auto-checkpoints |
+| `BRAYER_CAPTURE_MIN_MS` | `300000` | min interval between auto-checkpoints per session |
+
+Behavior:
+
+- the first model request of a session gets one bounded ready-order digest
+  injected into the system instructions (≤5 orders, ≤4000 chars, silent
+  failure); a session that already runs an attempt is skipped;
+- on `session.idle`, sessions that touched a brayer tool write one auto
+  checkpoint (`kind: auto`) through `brayer checkpoint write --session`, which
+  resolves the running attempt from the session ref; throttled per session.
+  These checkpoints are what `requireCheckpoint` counts, so the knob can be
+  enabled once the plugin is deployed.
+
+## Session hooks (`@igorjpimenta/brayer-openclaw`)
+
+Read inside the OpenClaw gateway process
+([`index.js`](../plugins/openclaw/brayer/index.js),
+[`digest.js`](../plugins/openclaw/brayer/digest.js),
+[`capture.js`](../plugins/openclaw/brayer/capture.js)). The gateway opens the
+store directly, so no CLI spawn is involved. The same env names apply:
+`BRAYER_READY_LIMIT`, `BRAYER_DIGEST_DISABLE`, `BRAYER_CAPTURE_DISABLE`,
+`BRAYER_CAPTURE_MIN_MS`.
+
+Two modes:
+
+- **Configured order** (`orderId` set, `autoCheckpoint` not false) — the
+  pre-existing flow: claim/resume the configured order, checkpoint on
+  `agent_end`/`session_end`, resume context on `before_prompt_build`.
+- **General gateway** (no `orderId`, or `autoCheckpoint: false`) — the
+  proactive flow: the first prompt of a session gets the same bounded
+  ready-order digest (via `prependContext`), and `agent_end`/`session_end`
+  write one throttled auto checkpoint per session that touched a brayer tool
+  and has a running attempt, resolved from the session ref.
