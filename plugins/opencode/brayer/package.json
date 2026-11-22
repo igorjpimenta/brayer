@@ -14,8 +14,7 @@
     "access": "public"
   },
   "exports": {
-    ".": "./index.js",
-    "./doctor": "./doctor.js"
+    ".": "./index.js"
   },
   "files": [
     "index.js",
@@ -24,14 +23,12 @@
     "setup.js",
     "digest.js",
     "capture.js",
-    "doctor.js",
     "wake.js",
     "bin/"
   ],
   "main": "index.js",
   "bin": {
-    "brayer-wake": "bin/brayer-wake.js",
-    "brayer-doctor": "bin/brayer-doctor.js"
+    "brayer-wake": "bin/brayer-wake.js"
   },
   "dependencies": {
     "@opencode-ai/sdk": "1.19.3"
