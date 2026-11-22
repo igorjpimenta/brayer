@@ -63,7 +63,7 @@ Verify from the operator side — no transcript reading:
 $ brayer status
 WO-lqcvx0si  refactor invoice parser   review   openclaw:main:agent:main:explicit:ses_x
 
-brayer-doctor --harness opencode    # opencode adapter bin: fails when the MCP entry or identity plugin is missing
+brayer doctor                      # core wiring: database, MCP /health, claim-webhook registrations
 brayer adoption --days 30 --harness opencode   # real orders → attempts → verdicts, lease expiries, usage
 ```
 

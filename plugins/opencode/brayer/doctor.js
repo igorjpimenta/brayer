@@ -1,7 +1,7 @@
-// doctor.js — OpenCode-side configuration check. This is harness knowledge
-// (which config file, which plugin must be loaded), so it lives in the
-// adapter, not in the harness-agnostic core; `brayer doctor` in the core CLI
-// was removed with it.
+// doctor.js — OpenCode-side configuration check. Core `brayer doctor` covers
+// core wiring (database, MCP /health, claim webhooks); this adds the checks
+// only this harness can know: its own config file and whether the identity
+// plugin is actually loaded from it.
 
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";

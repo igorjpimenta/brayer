@@ -9,6 +9,7 @@ import { runOrder } from "./order.js";
 import { runAttempt } from "./attempt.js";
 import { runCheckpoint } from "./checkpoint.js";
 import { runAdoption } from "./adoption.js";
+import { runDoctor } from "./doctor.js";
 
 const usage = `brayer ${VERSION}
 
@@ -19,6 +20,7 @@ Usage:
   brayer serve --ws --port 38294
   brayer status [--json]
   brayer adoption --harness H [--days N] [--json]
+  brayer doctor [--url URL] [--json]
   brayer sweep [--max-attempts N]
   brayer order create --title T --goal G --acceptance A [--workspace W] [--status ready]
   brayer order cancel --id ID [--reason R]
@@ -59,6 +61,12 @@ export async function main(argv = process.argv.slice(2), { env = process.env, lo
 
   if (command === "adoption") {
     await runAdoption({ rest, env, logger });
+    return;
+  }
+
+  if (command === "doctor") {
+    const result = await runDoctor({ rest, env, logger });
+    if (result && result.ok === false) process.exitCode = 1;
     return;
   }
 
