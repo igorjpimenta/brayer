@@ -177,16 +177,28 @@ test("setup captures a checkpoint on idle for brayer sessions only", async () =>
   assert.equal(typeof cleanup, "function");
 });
 
-test("the V1 host gets the digest through the system transform once per session", async () => {
+test("the V1 host injects the digest into the first user message once per session", async () => {
   let digestCalls = 0;
   const hooks = createBrayerHooks({ buildDigest: async () => { digestCalls += 1; return "Brayer: ready."; } });
-  const first = { system: [] };
-  await hooks["experimental.chat.system.transform"]({ sessionID: "ses_1" }, first);
-  const second = { system: [] };
-  await hooks["experimental.chat.system.transform"]({ sessionID: "ses_1" }, second);
-  assert.deepEqual(first.system, ["Brayer: ready."]);
-  assert.deepEqual(second.system, []);
+  await hooks["chat.params"]({ sessionID: "ses_1", agent: "build" });
+  const messages = (text) => [{ info: { role: "user" }, parts: [{ type: "text", text }] }];
+  const first = { messages: messages("do the thing") };
+  await hooks["experimental.chat.messages.transform"]({}, first);
+  assert.equal(first.messages[0].parts[0].type, "text");
+  assert.equal(first.messages[0].parts[0].text, "Brayer: ready.");
+  assert.equal(first.messages[0].parts[1].text, "do the thing");
+
+  const second = { messages: [...messages("do the thing"), { info: { role: "assistant" }, parts: [] }, { info: { role: "user" }, parts: [{ type: "text", text: "second turn" }] }] };
+  await hooks["experimental.chat.messages.transform"]({}, second);
+  assert.equal(second.messages[0].parts.length, 1);
   assert.equal(digestCalls, 1);
+});
+
+test("the V1 digest skips turns without a user message and survives digest errors", async () => {
+  const hooks = createBrayerHooks({ buildDigest: async () => { throw new Error("boom"); } });
+  await hooks["experimental.chat.messages.transform"]({}, { messages: [{ info: { role: "user" }, parts: [{ type: "text", text: "hi" }] }] });
+  await hooks["experimental.chat.messages.transform"]({}, { messages: [] });
+  await hooks["experimental.chat.messages.transform"]({}, {});
 });
 
 test("the V1 event hook captures only session.idle events for brayer sessions", async () => {
