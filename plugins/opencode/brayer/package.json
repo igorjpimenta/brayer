@@ -1,6 +1,6 @@
 {
   "name": "@igorjpimenta/brayer-opencode",
-  "version": "2026.11.22-beta.4",
+  "version": "2026.11.23-beta.1",
   "description": "OpenCode companion for Brayer: stamps identity and runs the optional claim wake bridge.",
   "license": "MIT",
   "type": "module",
@@ -31,7 +31,7 @@
     "brayer-wake": "bin/brayer-wake.js"
   },
   "dependencies": {
-    "@igorjpimenta/brayer": "2026.11.22-beta.4",
+    "@igorjpimenta/brayer": "2026.11.23-beta.1",
     "@opencode-ai/sdk": "1.19.3"
   }
 }
