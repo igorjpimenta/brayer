@@ -61,7 +61,7 @@ Verify from the operator side — no transcript reading:
 
 ```sh
 $ brayer status
-WO-lqcvx0si  refactor invoice parser   review   openclaw:main:agent:main:explicit:ses_x
+WO-lqcvx0si  review    openclaw:main:agent:main:explicit:ses_x  1  refactor invoice parser
 
 brayer doctor                      # core wiring: database, MCP /health, claim-webhook registrations
 brayer adoption --days 30 --harness opencode   # real orders → attempts → verdicts, lease expiries, usage
