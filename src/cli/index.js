@@ -22,7 +22,7 @@ Usage:
   brayer adoption --harness H [--days N] [--json]
   brayer doctor [--url URL] [--json]
   brayer sweep [--max-attempts N]
-  brayer order create --title T --goal G --acceptance A [--workspace W] [--status ready]
+  brayer order create --title T --goal G --acceptance A [--workspace W] [--repo R] [--branch B] [--priority N] [--status draft|ready] [--approval-mode auto|evidence|human]
   brayer order cancel --id ID [--reason R]
   brayer order get --id ID
   brayer order ready [--limit N]
